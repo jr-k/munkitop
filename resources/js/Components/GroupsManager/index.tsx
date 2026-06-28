@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import MobileconfigModal from '../MobileconfigModal';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
 import { Group, ManifestPreview } from '../../types';
@@ -21,6 +22,7 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
     const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
     const [search, setSearch] = useState('');
     const [manifestToView, setManifestToView] = useState<{ title: string; manifest: ManifestPreview } | null>(null);
+    const [mobileconfigToView, setMobileconfigToView] = useState<Group | null>(null);
     const [sort, setSort] = useState<{ key: GroupSortKey; direction: SortDirection }>({
         key: 'name',
         direction: 'asc',
@@ -137,7 +139,7 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
     }
 
     useEffect(() => {
-        if (!createOpen && !manifestToView && !groupToEdit) {
+        if (!createOpen && !manifestToView && !mobileconfigToView && !groupToEdit) {
             return;
         }
 
@@ -148,6 +150,11 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
 
             if (manifestToView) {
                 setManifestToView(null);
+                return;
+            }
+
+            if (mobileconfigToView) {
+                setMobileconfigToView(null);
                 return;
             }
 
@@ -162,7 +169,7 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, manifestToView, groupToEdit]);
+    }, [createOpen, manifestToView, mobileconfigToView, groupToEdit]);
 
     return (
         <S.GroupsManagerContainer>
@@ -380,12 +387,10 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
                                     </td>
                                     <td>
                                         <S.TableIconButton
-                                            as="a"
-                                            href={`/munki/groups/${group.id}/mobileconfig`}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                            type="button"
                                             aria-label={t('common.downloadMobileconfig')}
                                             title={t('common.downloadMobileconfig')}
+                                            onClick={() => setMobileconfigToView(group)}
                                         >
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
@@ -434,6 +439,7 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
                             <div>
                                 <S.ModalTitle>Manifest · {manifestToView.title}</S.ModalTitle>
                                 <S.ModalDescription>{manifestToView.manifest.path}</S.ModalDescription>
+                                <S.ModalDescription>{t('common.manifestHelp')}</S.ModalDescription>
                             </div>
                             <S.IconButton type="button" onClick={() => setManifestToView(null)} aria-label={t('common.close')}>
                                 ×
@@ -459,6 +465,17 @@ export default function GroupsManager({ groups }: GroupsManagerProps) {
                         </S.ModalActions>
                     </S.Dialog>
                 </S.ModalOverlay>
+            ) : null}
+            {mobileconfigToView ? (
+                <MobileconfigModal
+                    open
+                    title={`Mobileconfig · ${mobileconfigToView.name}`}
+                    description={mobileconfigToView.slug}
+                    previewUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig/preview`}
+                    downloadUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig`}
+                    shareUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig/share`}
+                    onClose={() => setMobileconfigToView(null)}
+                />
             ) : null}
             <ConfirmModal
                 open={groupToDelete !== null}

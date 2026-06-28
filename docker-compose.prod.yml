@@ -9,6 +9,8 @@ services:
       - "${APP_PORT:-8080}:8000"
     environment:
       APP_NAME: "Munki My Admin"
+      APP_DISPLAY_NAME: ${APP_DISPLAY_NAME:-Munki My Admin}
+      APP_VERSION: ${APP_VERSION:-dev}
       APP_ENV: production
       APP_DEBUG: "false"
       APP_URL: ${APP_URL:-http://localhost:8080}

@@ -1,10 +1,14 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import FormField from '../../Components/FormField';
+import LogoMark from '../../Components/LogoMark';
 import { useI18n } from '../../i18n';
+import { PageProps } from '../../types';
 import * as S from './styled';
 
 export default function Login() {
     const { t } = useI18n();
+    const { props } = usePage<PageProps>();
+    const displayName = props.app.display_name;
     const form = useForm({
         email: '',
         password: '',
@@ -19,7 +23,10 @@ export default function Login() {
         <S.LoginContainer>
             <Head title={t('login.title')} />
             <S.Panel onSubmit={submit}>
-                <S.Title>Munki My Admin</S.Title>
+                <S.Brand>
+                    <LogoMark size={42} />
+                    <S.Title>{displayName}</S.Title>
+                </S.Brand>
                 <S.Help>{t('login.help')}</S.Help>
                 <FormField label="Email" error={form.errors.email}>
                     <S.Input

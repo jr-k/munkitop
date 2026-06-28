@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import MobileconfigModal from '../MobileconfigModal';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
 import { Group, ManifestPreview, Person } from '../../types';
@@ -23,6 +24,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [selectedTeamId, setSelectedTeamId] = useState('all');
     const [search, setSearch] = useState('');
     const [manifestToView, setManifestToView] = useState<{ title: string; manifest: ManifestPreview } | null>(null);
+    const [mobileconfigToView, setMobileconfigToView] = useState<Person | null>(null);
     const [personToEdit, setPersonToEdit] = useState<Person | null>(null);
     const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
     const [sort, setSort] = useState<{ key: PeopleSortKey; direction: SortDirection }>({
@@ -202,7 +204,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     }
 
     useEffect(() => {
-        if (!createOpen && !manifestToView && !personToEdit) {
+        if (!createOpen && !manifestToView && !mobileconfigToView && !personToEdit) {
             return;
         }
 
@@ -222,6 +224,11 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 return;
             }
 
+            if (mobileconfigToView) {
+                setMobileconfigToView(null);
+                return;
+            }
+
             if (personToEdit) {
                 closeEditModal();
                 return;
@@ -234,7 +241,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, manifestToView, personToEdit, groupsOpen, editGroupsOpen]);
+    }, [createOpen, manifestToView, mobileconfigToView, personToEdit, groupsOpen, editGroupsOpen]);
 
     useEffect(() => {
         if (!groupsOpen && !editGroupsOpen) {
@@ -503,12 +510,10 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                     </td>
                                     <td>
                                         <S.TableIconButton
-                                            as="a"
-                                            href={`/munki/people/${person.id}/mobileconfig`}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                            type="button"
                                             aria-label={t('common.downloadMobileconfig')}
                                             title={t('common.downloadMobileconfig')}
+                                            onClick={() => setMobileconfigToView(person)}
                                         >
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
@@ -553,6 +558,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                             <div>
                                 <S.ModalTitle>Manifest · {manifestToView.title}</S.ModalTitle>
                                 <S.ModalDescription>{manifestToView.manifest.path}</S.ModalDescription>
+                                <S.ModalDescription>{t('common.manifestHelp')}</S.ModalDescription>
                             </div>
                             <S.IconButton type="button" onClick={() => setManifestToView(null)} aria-label={t('common.close')}>
                                 ×
@@ -578,6 +584,17 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                         </S.ModalActions>
                     </S.EditDialog>
                 </S.ModalOverlay>
+            ) : null}
+            {mobileconfigToView ? (
+                <MobileconfigModal
+                    open
+                    title={`Mobileconfig · ${personLabel(mobileconfigToView)}`}
+                    description={mobileconfigToView.client_identifier}
+                    previewUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig/preview`}
+                    downloadUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig`}
+                    shareUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig/share`}
+                    onClose={() => setMobileconfigToView(null)}
+                />
             ) : null}
             {personToEdit ? (
                 <S.ModalOverlay

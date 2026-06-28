@@ -18,6 +18,10 @@ class HandleInertiaRequests extends Middleware
                     ? ['email' => config('munki.admin_email')]
                     : null,
             ],
+            'app' => [
+                'display_name' => config('app.display_name'),
+                'version' => config('app.version'),
+            ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

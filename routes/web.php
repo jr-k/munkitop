@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\MunkiExportController;
+use App\Http\Controllers\MobileconfigShareController;
 use App\Http\Controllers\MunkiProfileController;
 use App\Http\Controllers\MunkiRepoController;
 use App\Http\Controllers\MunkiSettingsController;
@@ -24,6 +25,7 @@ Route::get('/repo', [MunkiRepoController::class, 'index'])->name('repo.index');
 Route::get('/repo/{path}', [MunkiRepoController::class, 'show'])
     ->where('path', '.*')
     ->name('repo.show');
+Route::get('/m/{share}', [MunkiProfileController::class, 'shared'])->name('mobileconfig.shared');
 
 Route::middleware('admin')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
@@ -41,9 +43,18 @@ Route::middleware('admin')->group(function () {
     Route::delete('/assignments/bulk', [AssignmentController::class, 'bulkDestroy'])->name('assignments.bulk-destroy');
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
+    Route::get('/links', [MobileconfigShareController::class, 'index'])->name('links.index');
+    Route::delete('/links/bulk', [MobileconfigShareController::class, 'bulkDestroy'])->name('links.bulk-destroy');
+    Route::put('/links/{share}', [MobileconfigShareController::class, 'update'])->name('links.update');
+    Route::delete('/links/{share}', [MobileconfigShareController::class, 'destroy'])->name('links.destroy');
+
     Route::get('/munki', [DashboardController::class, 'munki'])->name('munki.index');
     Route::put('/munki/settings', [MunkiSettingsController::class, 'update'])->name('munki.settings.update');
     Route::get('/munki/groups/{group}/mobileconfig', [MunkiProfileController::class, 'group'])->name('munki.groups.mobileconfig');
+    Route::get('/munki/groups/{group}/mobileconfig/preview', [MunkiProfileController::class, 'groupPreview'])->name('munki.groups.mobileconfig.preview');
+    Route::post('/munki/groups/{group}/mobileconfig/share', [MunkiProfileController::class, 'shareGroup'])->name('munki.groups.mobileconfig.share');
     Route::get('/munki/people/{person}/mobileconfig', [MunkiProfileController::class, 'person'])->name('munki.people.mobileconfig');
+    Route::get('/munki/people/{person}/mobileconfig/preview', [MunkiProfileController::class, 'personPreview'])->name('munki.people.mobileconfig.preview');
+    Route::post('/munki/people/{person}/mobileconfig/share', [MunkiProfileController::class, 'sharePerson'])->name('munki.people.mobileconfig.share');
     Route::post('/munki/export', MunkiExportController::class)->name('munki.export');
 });

@@ -20,6 +20,16 @@ export const Panel = styled.form`
   width: 100%;
 `;
 
+export const Brand = styled.div`
+  align-items: center;
+  display: flex;
+  gap: 12px;
+
+  svg {
+    flex: 0 0 auto;
+  }
+`;
+
 export const Title = styled.h1`
   font-size: 26px;
   margin: 0;

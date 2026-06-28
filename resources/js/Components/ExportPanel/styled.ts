@@ -1,8 +1,11 @@
 import styled from 'styled-components';
 
 export const ExportPanelContainer = styled.div`
-  display: grid;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+  width: 100%;
 `;
 
 export const Hero = styled.div`
@@ -195,21 +198,6 @@ export const Text = styled.p`
   margin: 0;
 `;
 
-export const CodeBlock = styled.pre`
-  background: #0f172a;
-  border-radius: 16px;
-  color: #dbeafe;
-  margin: 0;
-  overflow: auto;
-  padding: 16px;
-  white-space: pre-wrap;
-
-  code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 13px;
-  }
-`;
-
 export const Steps = styled.div`
   display: grid;
   gap: 10px;
@@ -229,6 +217,11 @@ export const Step = styled.div`
 
   span {
     color: #475569;
+  }
+
+  a {
+    color: #2563eb;
+    font-weight: 800;
   }
 
   code {

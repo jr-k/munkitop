@@ -77,9 +77,27 @@ export type ManifestPreview = {
     content: string | null;
 };
 
+export type MobileconfigShare = {
+    id: number;
+    ulid: string;
+    url: string;
+    target: {
+        type: 'person' | 'group' | 'missing';
+        name: string | null;
+        identifier: string | null;
+    };
+    expires_at: string | null;
+    expired: boolean;
+    created_at: string | null;
+};
+
 export type PageProps = {
     auth: {
         admin: { email: string } | null;
+    };
+    app: {
+        display_name: string;
+        version: string;
     };
     flash: {
         success?: FlashMessagePayload;

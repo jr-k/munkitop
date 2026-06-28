@@ -18,7 +18,6 @@ type ExportPanelProps = {
 
 export default function ExportPanel({ munki }: ExportPanelProps) {
     const { t } = useI18n();
-    const exampleClientIdentifier = 'prenom.nom@example.com';
     const form = useForm({
         override: munki.externalUrl.override,
         url: munki.externalUrl.url,
@@ -112,31 +111,27 @@ export default function ExportPanel({ munki }: ExportPanelProps) {
                     {t('munki.clientConfigText')}
                 </S.Text>
 
-                <S.CodeBlock>
-                    <code>{`sudo defaults write /Library/Preferences/ManagedInstalls SoftwareRepoURL "${munki.repoUrl}"
-sudo defaults write /Library/Preferences/ManagedInstalls ClientIdentifier "${exampleClientIdentifier}"
-sudo defaults write /Library/Preferences/ManagedInstalls LogToSyslog -bool YES`}</code>
-                </S.CodeBlock>
-
                 <S.Steps>
                     <S.Step>
                         <strong>{t('munki.stepExport')}</strong>
                         <span>{t('munki.stepExportText')}</span>
                     </S.Step>
                     <S.Step>
-                        <strong>{t('munki.stepUrl')}</strong>
-                        <span>{t('munki.stepUrlText', { repoUrl: munki.repoUrl })}</span>
+                        <strong>{t('munki.stepMobileconfig')}</strong>
+                        <span>{t('munki.stepMobileconfigText')}</span>
                     </S.Step>
                     <S.Step>
-                        <strong>{t('munki.stepIdentifier')}</strong>
-                        <span>
-                            {t('munki.stepIdentifierText')} <code>jane@example.com</code>.
-                        </span>
+                        <strong>{t('munki.stepShare')}</strong>
+                        <span>{t('munki.stepShareText')}</span>
                     </S.Step>
                     <S.Step>
-                        <strong>{t('munki.stepTest')}</strong>
+                        <strong>{t('munki.stepInstall')}</strong>
                         <span>
-                            {t('munki.stepTestText')} <code>sudo managedsoftwareupdate --checkonly</code>.
+                            {t('munki.stepInstallText')}{' '}
+                            <a href="https://github.com/macadmins/munki-builds/releases" target="_blank" rel="noreferrer">
+                                {t('munki.clientDownloadLink')}
+                            </a>
+                            .
                         </span>
                     </S.Step>
                 </S.Steps>

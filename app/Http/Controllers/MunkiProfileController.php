@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use App\Models\MobileconfigShare;
 use App\Models\Person;
 use App\Services\MunkiExternalUrl;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class MunkiProfileController extends Controller
 {
@@ -16,7 +20,100 @@ class MunkiProfileController extends Controller
 
     public function group(Group $group): Response
     {
-        return $this->download(
+        return $this->download($this->groupPayload($group));
+    }
+
+    public function person(Person $person): Response
+    {
+        return $this->download($this->personPayload($person));
+    }
+
+    public function groupPreview(Group $group): JsonResponse
+    {
+        return $this->preview($this->groupPayload($group));
+    }
+
+    public function personPreview(Person $person): JsonResponse
+    {
+        return $this->preview($this->personPayload($person));
+    }
+
+    public function shareGroup(Request $request, Group $group): JsonResponse
+    {
+        return $this->share($request, Group::class, $group->getKey());
+    }
+
+    public function sharePerson(Request $request, Person $person): JsonResponse
+    {
+        return $this->share($request, Person::class, $person->getKey());
+    }
+
+    public function shared(MobileconfigShare $share): Response
+    {
+        if ($share->expires_at && $share->expires_at->isPast()) {
+            abort(404);
+        }
+
+        $target = $share->target;
+
+        if ($target instanceof Group) {
+            return $this->download($this->groupPayload($target));
+        }
+
+        if ($target instanceof Person) {
+            return $this->download($this->personPayload($target));
+        }
+
+        abort(404);
+    }
+
+    private function preview(array $payload): JsonResponse
+    {
+        return response()->json([
+            'content' => $this->mobileconfig($payload),
+            'file_name' => $payload['fileName'],
+        ]);
+    }
+
+    private function share(Request $request, string $targetClass, int $targetId): JsonResponse
+    {
+        $data = $request->validate([
+            'expires_in' => ['nullable', Rule::in(['never', '1d', '7d', '30d'])],
+        ]);
+
+        $expiresAt = match ($data['expires_in'] ?? 'never') {
+            '1d' => now()->addDay(),
+            '7d' => now()->addDays(7),
+            '30d' => now()->addDays(30),
+            default => null,
+        };
+
+        $share = MobileconfigShare::create([
+            'ulid' => strtolower((string) Str::ulid()),
+            'target_type' => $targetClass,
+            'target_id' => $targetId,
+            'expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'url' => url('/m/'.$share->ulid),
+            'expires_at' => $share->expires_at?->toIso8601String(),
+        ], 201);
+    }
+
+    private function download(array $payload): Response
+    {
+        $mobileconfig = $this->mobileconfig($payload);
+
+        return response($mobileconfig, 200, [
+            'Content-Disposition' => 'attachment; filename="'.$payload['fileName'].'"',
+            'Content-Type' => 'application/x-apple-aspen-config',
+        ]);
+    }
+
+    private function groupPayload(Group $group): array
+    {
+        return $this->payload(
             profileName: "Munki - {$group->name}",
             identifierSuffix: $group->slug,
             clientIdentifier: $group->slug,
@@ -25,7 +122,7 @@ class MunkiProfileController extends Controller
         );
     }
 
-    public function person(Person $person): Response
+    private function personPayload(Person $person): array
     {
         $displayName = trim("{$person->first_name} {$person->name}");
         $safeName = Str::of($person->client_identifier)
@@ -33,7 +130,7 @@ class MunkiProfileController extends Controller
             ->trim('-')
             ->value();
 
-        return $this->download(
+        return $this->payload(
             profileName: "Munki - {$displayName}",
             identifierSuffix: $safeName,
             clientIdentifier: $person->client_identifier,
@@ -42,27 +139,23 @@ class MunkiProfileController extends Controller
         );
     }
 
-    private function download(
+    private function payload(
         string $profileName,
         string $identifierSuffix,
         string $clientIdentifier,
         string $fileName,
         string $targetLabel,
-    ): Response {
-        $mobileconfig = $this->mobileconfig([
+    ): array {
+        return [
             'profileName' => $profileName,
             'identifier' => "com.munkimyadmin.munki.{$identifierSuffix}",
             'payloadUuid' => (string) Str::uuid(),
             'contentUuid' => (string) Str::uuid(),
             'repoUrl' => $this->externalUrl->repoUrl(),
             'clientIdentifier' => $clientIdentifier,
+            'fileName' => $fileName,
             'targetLabel' => $targetLabel,
-        ]);
-
-        return response($mobileconfig, 200, [
-            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-            'Content-Type' => 'application/x-apple-aspen-config',
-        ]);
+        ];
     }
 
     private function mobileconfig(array $values): string

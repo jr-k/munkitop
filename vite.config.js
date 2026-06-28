@@ -14,7 +14,19 @@ export default defineConfig({
                 }),
             ],
         }),
-        react(),
+        react({
+            babel: {
+                plugins: [
+                    [
+                        'babel-plugin-styled-components',
+                        {
+                            displayName: true,
+                            fileName: false,
+                        },
+                    ],
+                ],
+            },
+        }),
     ],
     server: {
         watch: {

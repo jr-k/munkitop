@@ -110,6 +110,8 @@ Important environment variables:
 
 | Variable | Description | Default |
 | --- | --- | --- |
+| `APP_DISPLAY_NAME` | Name displayed in the sidebar and login screen | `Munki My Admin` |
+| `APP_VERSION` | Version displayed in the sidebar footer | `dev` |
 | `APP_URL` | Base application URL used to build repository URLs | `http://localhost:8000` |
 | `ADMIN_EMAIL` | Admin login email | `admin@example.com` |
 | `ADMIN_PASSWORD` | Admin login password | `password` |
@@ -140,6 +142,8 @@ Optional production variables:
 
 ```text
 APP_PORT=8080
+APP_DISPLAY_NAME="Munki My Admin"
+APP_VERSION=dev
 MUNKI_DEFAULT_CATALOG=production
 MUNKI_BASE_MANIFEST=base
 ```

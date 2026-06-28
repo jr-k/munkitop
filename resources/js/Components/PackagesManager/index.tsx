@@ -856,17 +856,6 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                             <PackageIcon iconUrl={pkg.icon_url} name={pkg.display_name} />
                                             <S.PackageTitleText>
                                                 <S.PrimaryCell>{pkg.display_name}</S.PrimaryCell>
-                                                <S.PackageDetails>
-                                                    <S.DetailPill>
-                                                        {t('packages.bundleIdentifier')}: {pkg.bundle_identifier ?? '-'}
-                                                    </S.DetailPill>
-                                                    <S.DetailPill>
-                                                        {t('packages.version')}: {pkg.version ?? '-'}
-                                                    </S.DetailPill>
-                                                    <S.DetailPill>
-                                                        {t('packages.source')}: {pkg.pkg_path ? t('packages.sourceUploaded') : t('packages.sourceRemote')}
-                                                    </S.DetailPill>
-                                                </S.PackageDetails>
                                             </S.PackageTitleText>
                                         </S.PackageTitle>
                                     </td>

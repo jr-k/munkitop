@@ -1,30 +1,36 @@
 import styled from 'styled-components';
 
 export const AssignmentsManagerContainer = styled.div`
-  display: grid;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+  width: 100%;
 `;
 
 export const Toolbar = styled.div`
   align-items: center;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
+  border-radius: 16px;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: space-between;
-  padding: 18px;
+  max-width: 100%;
+  padding: 12px 14px;
+  width: 100%;
 `;
 
 export const ToolbarTitle = styled.h2`
   color: #0f172a;
-  font-size: 20px;
+  font-size: 18px;
   margin: 0;
 `;
 
 export const ToolbarDescription = styled.p`
   color: #64748b;
-  margin: 4px 0 0;
+  font-size: 13px;
+  margin: 2px 0 0;
 `;
 
 export const FilterBar = styled.div`
@@ -35,7 +41,9 @@ export const FilterBar = styled.div`
   display: flex;
   gap: 16px;
   justify-content: space-between;
+  max-width: 100%;
   padding: 14px;
+  width: 100%;
 `;
 
 export const FilterTitle = styled.strong`
@@ -55,6 +63,15 @@ export const FilterControls = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: flex-end;
+  margin-left: auto;
+
+
+  @media (max-width: 640px) {
+    justify-content: flex-start;
+    margin-left: 0;
+    width: 100%;
+  }
 `;
 
 export const FilterControl = styled.label`

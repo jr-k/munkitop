@@ -1,6 +1,8 @@
 import { PropsWithChildren } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
+import LogoMark from '../LogoMark';
 import { useI18n } from '../../i18n';
+import { PageProps } from '../../types';
 import * as S from './styled';
 
 type AppLayoutProps = PropsWithChildren<{
@@ -9,33 +11,102 @@ type AppLayoutProps = PropsWithChildren<{
 
 export default function AppLayout({ adminEmail, children }: AppLayoutProps) {
     const { locale, setLocale, t } = useI18n();
+    const { props, url } = usePage<PageProps>();
+    const displayName = props.app.display_name;
+    const version = props.app.version;
+    const sections = [
+        {
+            title: t('layout.directorySection'),
+            links: [
+                { href: '/people', label: t('common.people') },
+                { href: '/groups', label: t('common.groups') },
+                { href: '/links', label: t('common.links') },
+            ],
+        },
+        {
+            title: t('layout.softwareSection'),
+            links: [
+                { href: '/packages', label: t('common.packages') },
+            ],
+        },
+        {
+            title: t('layout.deploymentSection'),
+            links: [
+                { href: '/assignments', label: t('common.assignments') },
+                { href: '/munki', label: t('common.export') },
+            ],
+        },
+    ];
 
     return (
         <S.AppLayoutContainer>
-            <S.Header>
+            <S.Sidebar>
                 <S.Brand>
-                    <S.Title>Munki My Admin</S.Title>
-                    <S.Subtitle>{t('layout.signedIn', { email: adminEmail })}</S.Subtitle>
+                    <LogoMark />
+                    <div>
+                        <S.Title>{displayName}</S.Title>
+                    </div>
                 </S.Brand>
-                <S.HeaderActions>
-                    <S.NavLink href="/people">{t('common.people')}</S.NavLink>
-                    <S.NavLink href="/groups">{t('common.groups')}</S.NavLink>
-                    <S.NavLink href="/packages">{t('common.packages')}</S.NavLink>
-                    <S.NavLink href="/assignments">{t('common.assignments')}</S.NavLink>
-                    <S.NavLink href="/munki">{t('common.export')}</S.NavLink>
-                    <S.LanguageSelect
-                        aria-label={t('layout.language')}
-                        value={locale}
-                        onChange={(event) => setLocale(event.target.value as 'en' | 'fr')}
-                    >
-                        <option value="en">EN</option>
-                        <option value="fr">FR</option>
-                    </S.LanguageSelect>
-                    <S.LogoutButton type="button" onClick={() => router.post('/logout')}>
-                        {t('layout.logout')}
-                    </S.LogoutButton>
-                </S.HeaderActions>
-            </S.Header>
+
+                <S.Navigation aria-label="Main navigation">
+                    {sections.map((section) => (
+                        <S.NavSection key={section.title}>
+                            <S.SectionTitle>{section.title}</S.SectionTitle>
+                            {section.links.map((link) => (
+                                <S.NavLink key={link.href} href={link.href} $active={url.startsWith(link.href)}>
+                                    {link.label}
+                                </S.NavLink>
+                            ))}
+                        </S.NavSection>
+                    ))}
+                </S.Navigation>
+
+                <S.SidebarFooter>
+                    <S.LanguageSwitcher aria-label={t('layout.language')}>
+                        <S.LanguageButton
+                            type="button"
+                            $active={locale === 'en'}
+                            onClick={() => setLocale('en')}
+                            aria-label="English"
+                            title="English"
+                        >
+                            <span aria-hidden="true">🇬🇧</span>
+                            EN
+                        </S.LanguageButton>
+                        <S.LanguageButton
+                            type="button"
+                            $active={locale === 'fr'}
+                            onClick={() => setLocale('fr')}
+                            aria-label="Français"
+                            title="Français"
+                        >
+                            <span aria-hidden="true">🇫🇷</span>
+                            FR
+                        </S.LanguageButton>
+                    </S.LanguageSwitcher>
+                    <S.UserFooter>
+                        <S.SignedIn>
+                            <span>{t('layout.connectedAs')}</span>
+                            <S.SignedInEmail>{adminEmail}</S.SignedInEmail>
+                        </S.SignedIn>
+                        <S.LogoutButton type="button" onClick={() => router.post('/logout')} aria-label={t('layout.logout')} title={t('layout.logout')}>
+                            <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
+                                <path d="M10 6H6v12h4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                                <path d="M14 8l4 4-4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                                <path d="M18 12H9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                            </svg>
+                        </S.LogoutButton>
+                    </S.UserFooter>
+                    <S.ProjectMeta>
+                        <S.GitHubLink href="https://github.com/jr-k/munkimyadmin" target="_blank" rel="noreferrer" aria-label="GitHub" title="GitHub">
+                            <svg aria-hidden="true" fill="currentColor" height="17" viewBox="0 0 24 24" width="17">
+                                <path d="M12 2C6.5 2 2 6.6 2 12.2c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1.1 1.6 1.1.9 1.6 2.4 1.1 2.9.9.1-.7.4-1.1.7-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.8-.1-.3-.4-1.3.1-2.8 0 0 .8-.3 2.8 1.1.8-.2 1.6-.3 2.5-.3s1.7.1 2.5.3c1.9-1.4 2.8-1.1 2.8-1.1.5 1.5.2 2.5.1 2.8.6.8 1 1.7 1 2.8 0 3.9-2.4 4.7-4.6 5 .4.3.7 1 .7 2v3c0 .3.2.6.7.5 4-1.4 6.8-5.2 6.8-9.7C22 6.6 17.5 2 12 2Z" />
+                            </svg>
+                            <span>v{version}</span>
+                        </S.GitHubLink>
+                    </S.ProjectMeta>
+                </S.SidebarFooter>
+            </S.Sidebar>
             <S.Main>{children}</S.Main>
         </S.AppLayoutContainer>
     );
