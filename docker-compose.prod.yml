@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${GHCR_IMAGE:-ghcr.io/owner/munkimyadmin:latest}
+    image: ${GHCR_IMAGE:-ghcr.io/jr-k/munkimyadmin:latest}
     build:
       context: .
       target: production
