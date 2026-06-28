@@ -4,6 +4,7 @@ import AppLayout from '../../Components/AppLayout';
 import ConfirmModal from '../../Components/ConfirmModal';
 import FlashMessage from '../../Components/FlashMessage';
 import TableIcon from '../../Components/TableIcon';
+import TargetIcon from '../../Components/TargetIcon';
 import { useI18n } from '../../i18n';
 import { MobileconfigShare, PageProps } from '../../types';
 import * as S from './styled';
@@ -280,6 +281,7 @@ export default function Shares({ shares }: SharesPageProps) {
                                                     />
                                                     <S.TableIconButton
                                                         type="button"
+                                                        $size="compact"
                                                         aria-label={t('mobileconfig.copyLink')}
                                                         title={copiedShareId === share.id ? t('mobileconfig.copied') : t('mobileconfig.copyLink')}
                                                         onClick={() => copyLink(share.url, share.id)}
@@ -289,11 +291,26 @@ export default function Shares({ shares }: SharesPageProps) {
                                                 </S.LinkField>
                                             </td>
                                             <td>
-                                                <strong>{share.target.name ?? '-'}</strong>
-                                                <br />
-                                                <S.CodePill>{share.target.identifier ?? '-'}</S.CodePill>
+                                                <S.TargetCell>
+                                                    <S.TargetName>{share.target.name ?? '-'}</S.TargetName>
+                                                    <S.CodePill>{share.target.identifier ?? '-'}</S.CodePill>
+                                                </S.TargetCell>
                                             </td>
-                                            <td>{share.target.type === 'group' ? t('common.group') : t('common.person')}</td>
+                                            <td>
+                                                {share.target.type === 'group' || share.target.type === 'person' ? (
+                                                    <S.TypeIconLabel
+                                                        aria-label={share.target.type === 'group' ? t('common.group') : t('common.person')}
+                                                        tabIndex={0}
+                                                    >
+                                                        <TargetIcon type={share.target.type} />
+                                                        <S.TypeTooltip role="tooltip">
+                                                            {share.target.type === 'group' ? t('common.group') : t('common.person')}
+                                                        </S.TypeTooltip>
+                                                    </S.TypeIconLabel>
+                                                ) : (
+                                                    '-'
+                                                )}
+                                            </td>
                                             <td>
                                                 <S.DateText>{formatDate(share.created_at)}</S.DateText>
                                             </td>

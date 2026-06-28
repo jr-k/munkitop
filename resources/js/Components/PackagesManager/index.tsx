@@ -863,8 +863,14 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                         <S.CodePill>{pkg.munki_name}</S.CodePill>
                                     </td>
                                     <td>{pkg.bundle_identifier ? <S.CodePill>{pkg.bundle_identifier}</S.CodePill> : '-'}</td>
-                                    <td>{pkg.version ?? '-'}</td>
-                                    <td>{pkg.pkg_path ? t('packages.sourceUploaded') : t('packages.sourceRemote')}</td>
+                                    <td>
+                                        {pkg.version ? <S.VersionText>{pkg.version}</S.VersionText> : '-'}
+                                    </td>
+                                    <td>
+                                        <S.SourceBadge $source={pkg.pkg_path ? 'uploaded' : 'remote'}>
+                                            {pkg.pkg_path ? t('packages.sourceUploaded') : t('packages.sourceRemote')}
+                                        </S.SourceBadge>
+                                    </td>
                                     <td>
                                         <S.StatusBadge $active={pkg.active}>
                                             {pkg.active ? t('packages.activeStatus') : t('packages.inactiveStatus')}

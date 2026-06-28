@@ -100,7 +100,7 @@ export const TableCard = styled.div`
 
 export const Table = styled.table`
   border-collapse: collapse;
-  min-width: 980px;
+  min-width: 900px;
   width: 100%;
 
   th,
@@ -154,8 +154,8 @@ export const SortButton = styled.button`
 export const LinkField = styled.div`
   align-items: center;
   display: flex;
-  gap: 8px;
-  min-width: 320px;
+  gap: 6px;
+  width: 190px;
 `;
 
 export const LinkInput = styled.input`
@@ -165,8 +165,68 @@ export const LinkInput = styled.input`
   color: #0f172a;
   flex: 1;
   font: inherit;
+  font-size: 12px;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 7px 9px;
+`;
+
+export const TargetCell = styled.div`
+  display: grid;
+  gap: 7px;
+`;
+
+export const TargetName = styled.strong`
+  color: #0f172a;
+  display: block;
+`;
+
+export const TypeIconLabel = styled.span`
+  align-items: center;
+  display: inline-flex;
+  position: relative;
+
+  &:focus-visible {
+    outline: 3px solid rgb(147 197 253 / 70%);
+    outline-offset: 3px;
+    border-radius: 999px;
+  }
+`;
+
+export const TypeTooltip = styled.span`
+  background: #0f172a;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 10px;
+  bottom: calc(100% + 10px);
+  box-shadow: 0 12px 30px rgb(15 23 42 / 24%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  left: 50%;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  padding: 6px 9px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, 4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  white-space: nowrap;
+  z-index: 5;
+
+  &::after {
+    border: 5px solid transparent;
+    border-top-color: #0f172a;
+    content: '';
+    left: 50%;
+    position: absolute;
+    top: 100%;
+    transform: translateX(-50%);
+  }
+
+  ${TypeIconLabel}:hover &,
+  ${TypeIconLabel}:focus-visible & {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 `;
 
 export const Badge = styled.span<{ $expired: boolean }>`
@@ -215,18 +275,18 @@ export const DangerButton = styled.button`
   padding: 9px 12px;
 `;
 
-export const TableIconButton = styled.button<{ $tone?: 'danger' | 'neutral' }>`
+export const TableIconButton = styled.button<{ $tone?: 'danger' | 'neutral'; $size?: 'compact' | 'default' }>`
   align-items: center;
   background: ${({ $tone }) => ($tone === 'danger' ? '#fee2e2' : '#eef2ff')};
   border: 0;
   border-radius: 10px;
   color: ${({ $tone }) => ($tone === 'danger' ? '#991b1b' : '#3730a3')};
   display: inline-flex;
-  height: 38px;
+  height: ${({ $size }) => ($size === 'compact' ? '31px' : '38px')};
   justify-content: center;
   padding: 0;
   text-decoration: none;
-  width: 38px;
+  width: ${({ $size }) => ($size === 'compact' ? '31px' : '38px')};
 
   &:hover {
     background: ${({ $tone }) => ($tone === 'danger' ? '#fecaca' : '#e0e7ff')};

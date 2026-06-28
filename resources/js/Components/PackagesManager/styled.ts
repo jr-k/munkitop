@@ -344,6 +344,23 @@ export const StatusBadge = styled.span<{ $active: boolean }>`
   padding: 4px 8px;
 `;
 
+export const VersionText = styled.span`
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+`;
+
+export const SourceBadge = styled.span<{ $source: 'uploaded' | 'remote' }>`
+  align-items: center;
+  background: ${({ $source }) => ($source === 'uploaded' ? '#ecfeff' : '#eef2ff')};
+  border-radius: 999px;
+  color: ${({ $source }) => ($source === 'uploaded' ? '#155e75' : '#3730a3')};
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px;
+`;
+
 export const HashText = styled.code`
   color: #64748b;
   display: block;
