@@ -38,6 +38,7 @@ export type Package = {
     icon_path: string | null;
     icon_url: string | null;
     pkg_path: string | null;
+    pkg_file_url: string | null;
     hash: string;
     pkg_url: string | null;
     active: boolean;

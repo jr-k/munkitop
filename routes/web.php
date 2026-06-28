@@ -10,6 +10,7 @@ use App\Http\Controllers\MunkiProfileController;
 use App\Http\Controllers\MunkiRepoController;
 use App\Http\Controllers\MunkiSettingsController;
 use App\Http\Controllers\PackageController;
+use App\Http\Controllers\PackageFileController;
 use App\Http\Controllers\PackageIconController;
 use App\Http\Controllers\PersonController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,7 @@ Route::middleware('admin')->group(function () {
     Route::resource('people', PersonController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('groups', GroupController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('packages', PackageController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('/packages/{package}/file', PackageFileController::class)->name('packages.file');
     Route::get('/packages/{package}/icon', PackageIconController::class)->name('packages.icon');
 
     Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');

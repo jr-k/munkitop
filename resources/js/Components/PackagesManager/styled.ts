@@ -128,6 +128,24 @@ export const Select = styled.select`
   padding: 11px 12px;
 `;
 
+export const FieldWithActions = styled.div`
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+`;
+
+export const FieldActions = styled.div`
+  align-items: center;
+  display: flex;
+  gap: 6px;
+`;
+
+export const IconPreviewLink = styled.a`
+  display: inline-flex;
+  text-decoration: none;
+`;
+
 export const SwitchInput = styled.input`
   position: absolute;
   opacity: 0;

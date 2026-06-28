@@ -33,6 +33,7 @@ class PackageController extends Controller
                     'icon_path' => $package->icon_path,
                     'icon_url' => $package->icon_path ? route('packages.icon', $package) : null,
                     'pkg_path' => $package->pkg_path,
+                    'pkg_file_url' => $package->pkg_path ? route('packages.file', $package) : null,
                     'hash' => $package->hash,
                     'pkg_url' => $package->pkg_url,
                     'active' => $package->active,

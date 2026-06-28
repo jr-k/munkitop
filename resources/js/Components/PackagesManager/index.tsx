@@ -230,6 +230,10 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
 
         return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
     });
+    const editPackageFileUrl = packageToEdit?.pkg_file_url ?? null;
+    const editPackageDownloadUrl = editPackageFileUrl ? `${editPackageFileUrl}?download=1` : null;
+    const editPackageIconUrl = packageToEdit?.icon_url ?? null;
+    const editPackageRemoteUrl = editForm.data.pkg_url.trim();
 
     function sortValue(pkg: Package, key: PackageSortKey) {
         if (key === 'source') {
@@ -501,11 +505,40 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                 />
                             </FormField>
                             <FormField label={t('packages.icon')} error={editForm.errors.icon}>
-                                <S.Input
-                                    type="file"
-                                    accept=".icns"
-                                    onChange={(event) => editForm.setData('icon', event.target.files?.[0] ?? null)}
-                                />
+                                <S.FieldWithActions>
+                                    <S.Input
+                                        type="file"
+                                        accept=".icns"
+                                        onChange={(event) => editForm.setData('icon', event.target.files?.[0] ?? null)}
+                                    />
+                                    {editPackageIconUrl ? (
+                                        <S.FieldActions>
+                                            <S.IconPreviewLink
+                                                href={editPackageIconUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                aria-label={t('common.open')}
+                                                title={t('common.open')}
+                                            >
+                                                <PackageIcon
+                                                    iconUrl={editPackageIconUrl}
+                                                    name={packageToEdit.display_name}
+                                                    size="sm"
+                                                />
+                                            </S.IconPreviewLink>
+                                            <S.TableIconButton
+                                                as="a"
+                                                href={editPackageIconUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                aria-label={t('common.open')}
+                                                title={t('common.open')}
+                                            >
+                                                <TableIcon name="external" />
+                                            </S.TableIconButton>
+                                        </S.FieldActions>
+                                    ) : null}
+                                </S.FieldWithActions>
                             </FormField>
                             <FormField label={t('packages.source')}>
                                 <S.Select
@@ -527,19 +560,62 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             <S.Full>
                                 {editForm.data.pkg_source === 'url' ? (
                                     <FormField label={t('packages.pkgUrl')} error={editForm.errors.pkg_url}>
-                                        <S.Input
-                                            type="url"
-                                            value={editForm.data.pkg_url}
-                                            onChange={(event) => editForm.setData('pkg_url', event.target.value)}
-                                        />
+                                        <S.FieldWithActions>
+                                            <S.Input
+                                                type="url"
+                                                value={editForm.data.pkg_url}
+                                                onChange={(event) => editForm.setData('pkg_url', event.target.value)}
+                                            />
+                                            {editPackageRemoteUrl ? (
+                                                <S.FieldActions>
+                                                    <S.TableIconButton
+                                                        as="a"
+                                                        href={editPackageRemoteUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        aria-label={t('common.open')}
+                                                        title={t('common.open')}
+                                                    >
+                                                        <TableIcon name="external" />
+                                                    </S.TableIconButton>
+                                                </S.FieldActions>
+                                            ) : null}
+                                        </S.FieldWithActions>
                                     </FormField>
                                 ) : (
                                     <FormField label={t('packages.pkgFile')} error={editForm.errors.pkg_file}>
-                                        <S.Input
-                                            type="file"
-                                            accept=".pkg,.dmg"
-                                            onChange={(event) => editForm.setData('pkg_file', event.target.files?.[0] ?? null)}
-                                        />
+                                        <S.FieldWithActions>
+                                            <S.Input
+                                                type="file"
+                                                accept=".pkg,.dmg"
+                                                onChange={(event) => editForm.setData('pkg_file', event.target.files?.[0] ?? null)}
+                                            />
+                                            {editPackageFileUrl && editPackageDownloadUrl ? (
+                                                <S.FieldActions>
+                                                    <S.TableIconButton
+                                                        as="a"
+                                                        href={editPackageFileUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        aria-label={t('common.open')}
+                                                        title={t('common.open')}
+                                                    >
+                                                        <TableIcon name="external" />
+                                                    </S.TableIconButton>
+                                                    <S.TableIconButton
+                                                        as="a"
+                                                        href={editPackageDownloadUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        download
+                                                        aria-label={t('common.download')}
+                                                        title={t('common.download')}
+                                                    >
+                                                        <TableIcon name="download" />
+                                                    </S.TableIconButton>
+                                                </S.FieldActions>
+                                            ) : null}
+                                        </S.FieldWithActions>
                                     </FormField>
                                 )}
                             </S.Full>
