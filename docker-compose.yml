@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      MUNKI_REPO_PATH: /var/www/html/storage/app/munki_repo
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+      - munki_repo:/var/www/html/storage/app/munki_repo
+
+volumes:
+  vendor:
+  node_modules:
+  munki_repo:
