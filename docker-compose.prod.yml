@@ -18,7 +18,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       DB_CONNECTION: sqlite
-      DB_DATABASE: /var/www/html/database/database.sqlite
+      DB_DATABASE: /var/www/html/database-data/database.sqlite
       SESSION_DRIVER: database
       CACHE_STORE: database
       QUEUE_CONNECTION: database
@@ -26,7 +26,7 @@ services:
       MUNKI_DEFAULT_CATALOG: ${MUNKI_DEFAULT_CATALOG:-production}
       MUNKI_BASE_MANIFEST: ${MUNKI_BASE_MANIFEST:-base}
     volumes:
-      - sqlite_data:/var/www/html/database
+      - sqlite_data:/var/www/html/database-data
       - app_storage:/var/www/html/storage
       - munki_repo:/var/www/html/storage/app/munki_repo
     healthcheck:

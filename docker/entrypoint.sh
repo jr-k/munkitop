@@ -9,8 +9,14 @@ mkdir -p \
   storage/logs \
   bootstrap/cache
 
-if [ ! -f database/database.sqlite ] && [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
-  touch database/database.sqlite
+if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
+  SQLITE_DATABASE="${DB_DATABASE:-database/database.sqlite}"
+
+  mkdir -p "$(dirname "$SQLITE_DATABASE")"
+
+  if [ ! -f "$SQLITE_DATABASE" ]; then
+    touch "$SQLITE_DATABASE"
+  fi
 fi
 
 if [ "${APP_ENV:-production}" != "local" ]; then
