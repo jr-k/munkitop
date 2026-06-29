@@ -27,6 +27,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [createOpen, setCreateOpen] = useState(false);
     const [groupsOpen, setGroupsOpen] = useState(false);
     const [editGroupsOpen, setEditGroupsOpen] = useState(false);
+    const [createGroupsSearch, setCreateGroupsSearch] = useState('');
+    const [editGroupsSearch, setEditGroupsSearch] = useState('');
     const [filterGroupsOpen, setFilterGroupsOpen] = useState(false);
     const [filterGroupsSearch, setFilterGroupsSearch] = useState('');
     const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
@@ -66,6 +68,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
             onSuccess: () => {
                 form.reset();
                 setGroupsOpen(false);
+                setCreateGroupsSearch('');
                 setCreateOpen(false);
             },
         });
@@ -75,6 +78,14 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const selectedGroups = selectableGroups.filter((group) => form.data.group_ids.includes(group.id));
     const selectedEditGroups = selectableGroups.filter((group) => editForm.data.group_ids.includes(group.id));
     const selectedFilterGroups = selectableGroups.filter((group) => selectedTeamIds.includes(group.id));
+    const normalizedCreateGroupsSearch = createGroupsSearch.trim().toLowerCase();
+    const filteredCreateSelectableGroups = selectableGroups.filter((group) =>
+        group.name.toLowerCase().includes(normalizedCreateGroupsSearch),
+    );
+    const normalizedEditGroupsSearch = editGroupsSearch.trim().toLowerCase();
+    const filteredEditSelectableGroups = selectableGroups.filter((group) =>
+        group.name.toLowerCase().includes(normalizedEditGroupsSearch),
+    );
     const normalizedFilterGroupsSearch = filterGroupsSearch.trim().toLowerCase();
     const filteredSelectableGroups = selectableGroups.filter((group) =>
         group.name.toLowerCase().includes(normalizedFilterGroupsSearch),
@@ -182,6 +193,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     function openEditModal(person: Person) {
         setPersonToEdit(person);
         setEditGroupsOpen(false);
+        setEditGroupsSearch('');
         editForm.clearErrors();
         editForm.setData({
             name: person.name,
@@ -195,6 +207,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     function closeEditModal() {
         setPersonToEdit(null);
         setEditGroupsOpen(false);
+        setEditGroupsSearch('');
         editForm.clearErrors();
         editForm.reset();
     }
@@ -250,6 +263,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
             if (groupsOpen || editGroupsOpen || filterGroupsOpen) {
                 setGroupsOpen(false);
                 setEditGroupsOpen(false);
+                setCreateGroupsSearch('');
+                setEditGroupsSearch('');
                 setFilterGroupsOpen(false);
                 setFilterGroupsSearch('');
                 return;
@@ -272,6 +287,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
 
             setCreateOpen(false);
             setGroupsOpen(false);
+            setCreateGroupsSearch('');
         }
 
         window.addEventListener('keydown', closeOnEscape);
@@ -301,6 +317,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
 
             setGroupsOpen(false);
             setEditGroupsOpen(false);
+            setCreateGroupsSearch('');
+            setEditGroupsSearch('');
             setFilterGroupsOpen(false);
             setFilterGroupsSearch('');
         }
@@ -342,6 +360,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
 
                         setCreateOpen(false);
                         setGroupsOpen(false);
+                        setCreateGroupsSearch('');
                     }}
                 >
                     <S.EditDialog onClick={(event) => event.stopPropagation()}>
@@ -357,6 +376,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                 onClick={() => {
                                     setCreateOpen(false);
                                     setGroupsOpen(false);
+                                    setCreateGroupsSearch('');
                                 }}
                                 aria-label={t('common.close')}
                             >
@@ -397,21 +417,29 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                     </S.ChipTrigger>
                                     {groupsOpen ? (
                                         <S.DropdownMenu>
-                                            {selectableGroups.map((group) => {
-                                                const selected = form.data.group_ids.includes(group.id);
+                                            <S.DropdownSearch
+                                                value={createGroupsSearch}
+                                                onChange={(event) => setCreateGroupsSearch(event.target.value)}
+                                                placeholder={`${t('common.search')}...`}
+                                                autoFocus
+                                            />
+                                            <S.DropdownOptionsList>
+                                                {filteredCreateSelectableGroups.map((group) => {
+                                                    const selected = form.data.group_ids.includes(group.id);
 
-                                                return (
-                                                    <S.DropdownOption
-                                                        key={group.id}
-                                                        type="button"
-                                                        $selected={selected}
-                                                        onClick={() => toggleGroup(group.id)}
-                                                    >
-                                                        <span>{group.name}</span>
-                                                        {selected ? <span aria-hidden="true">✓</span> : null}
-                                                    </S.DropdownOption>
-                                                );
-                                            })}
+                                                    return (
+                                                        <S.DropdownOption
+                                                            key={group.id}
+                                                            type="button"
+                                                            $selected={selected}
+                                                            onClick={() => toggleGroup(group.id)}
+                                                        >
+                                                            <span>{group.name}</span>
+                                                            {selected ? <span aria-hidden="true">✓</span> : null}
+                                                        </S.DropdownOption>
+                                                    );
+                                                })}
+                                            </S.DropdownOptionsList>
                                         </S.DropdownMenu>
                                     ) : null}
                                 </S.ChipDropdown>
@@ -430,6 +458,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                     onClick={() => {
                                         setCreateOpen(false);
                                         setGroupsOpen(false);
+                                        setCreateGroupsSearch('');
                                     }}
                                 >
                                     {t('common.cancel')}
@@ -488,31 +517,33 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                         placeholder={`${t('common.search')}...`}
                                         autoFocus
                                     />
-                                    {filteredSelectableGroups.map((group) => {
-                                        const selected = selectedTeamIds.includes(group.id);
+                                    <S.DropdownOptionsList>
+                                        {filteredSelectableGroups.map((group) => {
+                                            const selected = selectedTeamIds.includes(group.id);
 
-                                        return (
+                                            return (
+                                                <S.DropdownOption
+                                                    key={group.id}
+                                                    type="button"
+                                                    $selected={selected}
+                                                    onClick={() => toggleFilterGroup(group.id)}
+                                                >
+                                                    <span>{group.name}</span>
+                                                    {selected ? <span aria-hidden="true">✓</span> : null}
+                                                </S.DropdownOption>
+                                            );
+                                        })}
+                                        {showWithoutOptionalTeamOption ? (
                                             <S.DropdownOption
-                                                key={group.id}
                                                 type="button"
-                                                $selected={selected}
-                                                onClick={() => toggleFilterGroup(group.id)}
+                                                $selected={includeWithoutOptionalTeam}
+                                                onClick={() => setIncludeWithoutOptionalTeam((selected) => !selected)}
                                             >
-                                                <span>{group.name}</span>
-                                                {selected ? <span aria-hidden="true">✓</span> : null}
+                                                <span>{t('people.withoutOptionalTeam')}</span>
+                                                {includeWithoutOptionalTeam ? <span aria-hidden="true">✓</span> : null}
                                             </S.DropdownOption>
-                                        );
-                                    })}
-                                    {showWithoutOptionalTeamOption ? (
-                                        <S.DropdownOption
-                                            type="button"
-                                            $selected={includeWithoutOptionalTeam}
-                                            onClick={() => setIncludeWithoutOptionalTeam((selected) => !selected)}
-                                        >
-                                            <span>{t('people.withoutOptionalTeam')}</span>
-                                            {includeWithoutOptionalTeam ? <span aria-hidden="true">✓</span> : null}
-                                        </S.DropdownOption>
-                                    ) : null}
+                                        ) : null}
+                                    </S.DropdownOptionsList>
                                 </S.DropdownMenu>
                             ) : null}
                         </S.FilterDropdown>
@@ -770,21 +801,29 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                     </S.ChipTrigger>
                                     {editGroupsOpen ? (
                                         <S.DropdownMenu>
-                                            {selectableGroups.map((group) => {
-                                                const selected = editForm.data.group_ids.includes(group.id);
+                                            <S.DropdownSearch
+                                                value={editGroupsSearch}
+                                                onChange={(event) => setEditGroupsSearch(event.target.value)}
+                                                placeholder={`${t('common.search')}...`}
+                                                autoFocus
+                                            />
+                                            <S.DropdownOptionsList>
+                                                {filteredEditSelectableGroups.map((group) => {
+                                                    const selected = editForm.data.group_ids.includes(group.id);
 
-                                                return (
-                                                    <S.DropdownOption
-                                                        key={group.id}
-                                                        type="button"
-                                                        $selected={selected}
-                                                        onClick={() => toggleEditGroup(group.id)}
-                                                    >
-                                                        <span>{group.name}</span>
-                                                        {selected ? <span aria-hidden="true">✓</span> : null}
-                                                    </S.DropdownOption>
-                                                );
-                                            })}
+                                                    return (
+                                                        <S.DropdownOption
+                                                            key={group.id}
+                                                            type="button"
+                                                            $selected={selected}
+                                                            onClick={() => toggleEditGroup(group.id)}
+                                                        >
+                                                            <span>{group.name}</span>
+                                                            {selected ? <span aria-hidden="true">✓</span> : null}
+                                                        </S.DropdownOption>
+                                                    );
+                                                })}
+                                            </S.DropdownOptionsList>
                                         </S.DropdownMenu>
                                     ) : null}
                                 </S.ChipDropdown>

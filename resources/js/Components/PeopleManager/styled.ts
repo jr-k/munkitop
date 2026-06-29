@@ -129,12 +129,12 @@ export const DropdownMenu = styled.div`
   border-radius: 12px;
   box-shadow: 0 14px 30px rgb(15 23 42 / 12%);
   display: grid;
-  gap: 4px;
+  gap: 0;
   left: 0;
   margin-top: 6px;
-  max-height: 220px;
-  overflow: auto;
-  padding: 6px;
+  max-height: 260px;
+  overflow: hidden;
+  padding: 0;
   position: absolute;
   right: 0;
   z-index: 10;
@@ -145,7 +145,18 @@ export const DropdownSearch = styled.input`
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   color: #0f172a;
+  margin: 6px 6px 0;
   padding: 9px 10px;
+`;
+
+export const DropdownOptionsList = styled.div`
+  background: #ffffff;
+  display: grid;
+  gap: 4px;
+  max-height: 210px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
 `;
 
 export const DropdownOption = styled.button<{ $selected: boolean }>`

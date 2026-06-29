@@ -51,6 +51,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const [editSlugEdited, setEditSlugEdited] = useState(false);
     const [peopleOpen, setPeopleOpen] = useState(false);
     const [editPeopleOpen, setEditPeopleOpen] = useState(false);
+    const [createPeopleSearch, setCreatePeopleSearch] = useState('');
+    const [editPeopleSearch, setEditPeopleSearch] = useState('');
     const [filterPeopleOpen, setFilterPeopleOpen] = useState(false);
     const [filterPeopleSearch, setFilterPeopleSearch] = useState('');
     const [selectedFilterPersonIds, setSelectedFilterPersonIds] = useState<number[]>([]);
@@ -77,6 +79,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 form.reset();
                 setCreateSlugEdited(false);
                 setPeopleOpen(false);
+                setCreatePeopleSearch('');
                 setCreateOpen(false);
             },
         });
@@ -85,6 +88,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     function closeCreateModal() {
         setCreateOpen(false);
         setPeopleOpen(false);
+        setCreatePeopleSearch('');
         form.clearErrors();
         form.reset();
         setCreateSlugEdited(false);
@@ -110,6 +114,14 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const selectedPeople = people.filter((person) => form.data.person_ids.includes(person.id));
     const selectedEditPeople = people.filter((person) => editForm.data.person_ids.includes(person.id));
     const selectedFilterPeople = people.filter((person) => selectedFilterPersonIds.includes(person.id));
+    const normalizedCreatePeopleSearch = createPeopleSearch.trim().toLowerCase();
+    const filteredCreatePeople = people.filter((person) =>
+        [personLabel(person), person.email].join(' ').toLowerCase().includes(normalizedCreatePeopleSearch),
+    );
+    const normalizedEditPeopleSearch = editPeopleSearch.trim().toLowerCase();
+    const filteredEditPeople = people.filter((person) =>
+        [personLabel(person), person.email].join(' ').toLowerCase().includes(normalizedEditPeopleSearch),
+    );
     const normalizedFilterPeopleSearch = filterPeopleSearch.trim().toLowerCase();
     const filteredFilterPeople = people.filter((person) =>
         [personLabel(person), person.email].join(' ').toLowerCase().includes(normalizedFilterPeopleSearch),
@@ -119,6 +131,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         setGroupToEdit(group);
         setEditSlugEdited(false);
         setEditPeopleOpen(false);
+        setEditPeopleSearch('');
         editForm.clearErrors();
         editForm.setData({
             name: group.name,
@@ -132,6 +145,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         setGroupToEdit(null);
         setEditSlugEdited(false);
         setEditPeopleOpen(false);
+        setEditPeopleSearch('');
         editForm.clearErrors();
         editForm.reset();
     }
@@ -280,6 +294,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
             if (peopleOpen || editPeopleOpen || filterPeopleOpen) {
                 setPeopleOpen(false);
                 setEditPeopleOpen(false);
+                setCreatePeopleSearch('');
+                setEditPeopleSearch('');
                 setFilterPeopleOpen(false);
                 setFilterPeopleSearch('');
                 return;
@@ -320,6 +336,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
 
             setPeopleOpen(false);
             setEditPeopleOpen(false);
+            setCreatePeopleSearch('');
+            setEditPeopleSearch('');
             setFilterPeopleOpen(false);
             setFilterPeopleSearch('');
         }
@@ -396,24 +414,32 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                         </S.ChipTrigger>
                                         {peopleOpen ? (
                                             <S.DropdownMenu>
-                                                {people.map((person) => {
-                                                    const selected = form.data.person_ids.includes(person.id);
+                                                <S.DropdownSearch
+                                                    value={createPeopleSearch}
+                                                    onChange={(event) => setCreatePeopleSearch(event.target.value)}
+                                                    placeholder={`${t('common.search')}...`}
+                                                    autoFocus
+                                                />
+                                                <S.DropdownOptionsList>
+                                                    {filteredCreatePeople.map((person) => {
+                                                        const selected = form.data.person_ids.includes(person.id);
 
-                                                    return (
-                                                        <S.DropdownOption
-                                                            key={person.id}
-                                                            type="button"
-                                                            $selected={selected}
-                                                            onClick={() => togglePerson(person.id)}
-                                                        >
-                                                            <span>
-                                                                <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
-                                                                <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
-                                                            </span>
-                                                            {selected ? <span aria-hidden="true">✓</span> : null}
-                                                        </S.DropdownOption>
-                                                    );
-                                                })}
+                                                        return (
+                                                            <S.DropdownOption
+                                                                key={person.id}
+                                                                type="button"
+                                                                $selected={selected}
+                                                                onClick={() => togglePerson(person.id)}
+                                                            >
+                                                                <span>
+                                                                    <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                                    <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                                </span>
+                                                                {selected ? <span aria-hidden="true">✓</span> : null}
+                                                            </S.DropdownOption>
+                                                        );
+                                                    })}
+                                                </S.DropdownOptionsList>
                                             </S.DropdownMenu>
                                         ) : null}
                                     </S.ChipDropdown>
@@ -490,24 +516,32 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                         </S.ChipTrigger>
                                         {editPeopleOpen ? (
                                             <S.DropdownMenu>
-                                                {people.map((person) => {
-                                                    const selected = editForm.data.person_ids.includes(person.id);
+                                                <S.DropdownSearch
+                                                    value={editPeopleSearch}
+                                                    onChange={(event) => setEditPeopleSearch(event.target.value)}
+                                                    placeholder={`${t('common.search')}...`}
+                                                    autoFocus
+                                                />
+                                                <S.DropdownOptionsList>
+                                                    {filteredEditPeople.map((person) => {
+                                                        const selected = editForm.data.person_ids.includes(person.id);
 
-                                                    return (
-                                                        <S.DropdownOption
-                                                            key={person.id}
-                                                            type="button"
-                                                            $selected={selected}
-                                                            onClick={() => toggleEditPerson(person.id)}
-                                                        >
-                                                            <span>
-                                                                <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
-                                                                <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
-                                                            </span>
-                                                            {selected ? <span aria-hidden="true">✓</span> : null}
-                                                        </S.DropdownOption>
-                                                    );
-                                                })}
+                                                        return (
+                                                            <S.DropdownOption
+                                                                key={person.id}
+                                                                type="button"
+                                                                $selected={selected}
+                                                                onClick={() => toggleEditPerson(person.id)}
+                                                            >
+                                                                <span>
+                                                                    <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                                    <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                                </span>
+                                                                {selected ? <span aria-hidden="true">✓</span> : null}
+                                                            </S.DropdownOption>
+                                                        );
+                                                    })}
+                                                </S.DropdownOptionsList>
                                             </S.DropdownMenu>
                                         ) : null}
                                     </S.ChipDropdown>
@@ -576,24 +610,26 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                         placeholder={`${t('common.search')}...`}
                                         autoFocus
                                     />
-                                    {filteredFilterPeople.map((person) => {
-                                        const selected = selectedFilterPersonIds.includes(person.id);
+                                    <S.DropdownOptionsList>
+                                        {filteredFilterPeople.map((person) => {
+                                            const selected = selectedFilterPersonIds.includes(person.id);
 
-                                        return (
-                                            <S.DropdownOption
-                                                key={person.id}
-                                                type="button"
-                                                $selected={selected}
-                                                onClick={() => toggleFilterPerson(person.id)}
-                                            >
-                                                <span>
-                                                    <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
-                                                    <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
-                                                </span>
-                                                {selected ? <span aria-hidden="true">✓</span> : null}
-                                            </S.DropdownOption>
-                                        );
-                                    })}
+                                            return (
+                                                <S.DropdownOption
+                                                    key={person.id}
+                                                    type="button"
+                                                    $selected={selected}
+                                                    onClick={() => toggleFilterPerson(person.id)}
+                                                >
+                                                    <span>
+                                                        <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                        <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                    </span>
+                                                    {selected ? <span aria-hidden="true">✓</span> : null}
+                                                </S.DropdownOption>
+                                            );
+                                        })}
+                                    </S.DropdownOptionsList>
                                 </S.DropdownMenu>
                             ) : null}
                         </S.FilterDropdown>
