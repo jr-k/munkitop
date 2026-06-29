@@ -3,6 +3,7 @@ import { useI18n } from '../../i18n';
 import * as S from './styled';
 
 export const PAGE_SIZE_OPTIONS = [30, 60, 150, 500, 1000] as const;
+const DEFAULT_PAGE_SIZE = 60;
 const PAGINATION_VISIBLE_AFTER = PAGE_SIZE_OPTIONS[0];
 
 export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
@@ -35,14 +36,14 @@ function readUrlPage(param: string): number {
 
 function readUrlPageSize(param: string): PageSize {
     if (typeof window === 'undefined') {
-        return PAGE_SIZE_OPTIONS[0];
+        return DEFAULT_PAGE_SIZE;
     }
 
     const pageSize = Number(new URLSearchParams(window.location.search).get(param));
 
     return (PAGE_SIZE_OPTIONS as readonly number[]).includes(pageSize)
         ? pageSize as PageSize
-        : PAGE_SIZE_OPTIONS[0];
+        : DEFAULT_PAGE_SIZE;
 }
 
 export function usePagination<T>(items: T[], { key, syncUrl = true }: PaginationOptions = {}) {
