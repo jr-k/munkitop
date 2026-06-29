@@ -46,6 +46,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const [peopleOpen, setPeopleOpen] = useState(false);
     const [editPeopleOpen, setEditPeopleOpen] = useState(false);
     const [filterPeopleOpen, setFilterPeopleOpen] = useState(false);
+    const [filterPeopleSearch, setFilterPeopleSearch] = useState('');
     const [selectedFilterPersonIds, setSelectedFilterPersonIds] = useState<number[]>([]);
     const createPeopleDropdownRef = useRef<HTMLDivElement | null>(null);
     const editPeopleDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +104,10 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const selectedPeople = people.filter((person) => form.data.person_ids.includes(person.id));
     const selectedEditPeople = people.filter((person) => editForm.data.person_ids.includes(person.id));
     const selectedFilterPeople = people.filter((person) => selectedFilterPersonIds.includes(person.id));
+    const normalizedFilterPeopleSearch = filterPeopleSearch.trim().toLowerCase();
+    const filteredFilterPeople = people.filter((person) =>
+        [personLabel(person), person.email].join(' ').toLowerCase().includes(normalizedFilterPeopleSearch),
+    );
 
     function openEditModal(group: Group) {
         setGroupToEdit(group);
@@ -268,6 +273,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 setPeopleOpen(false);
                 setEditPeopleOpen(false);
                 setFilterPeopleOpen(false);
+                setFilterPeopleSearch('');
                 return;
             }
 
@@ -307,6 +313,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
             setPeopleOpen(false);
             setEditPeopleOpen(false);
             setFilterPeopleOpen(false);
+            setFilterPeopleSearch('');
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
@@ -545,7 +552,13 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                             </S.ChipTrigger>
                             {filterPeopleOpen ? (
                                 <S.DropdownMenu>
-                                    {people.map((person) => {
+                                    <S.DropdownSearch
+                                        value={filterPeopleSearch}
+                                        onChange={(event) => setFilterPeopleSearch(event.target.value)}
+                                        placeholder={`${t('common.search')}...`}
+                                        autoFocus
+                                    />
+                                    {filteredFilterPeople.map((person) => {
                                         const selected = selectedFilterPersonIds.includes(person.id);
 
                                         return (

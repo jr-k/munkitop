@@ -129,6 +129,14 @@ export const DropdownMenu = styled.div`
   z-index: 10;
 `;
 
+export const DropdownSearch = styled.input`
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #0f172a;
+  padding: 9px 10px;
+`;
+
 export const DropdownOption = styled.button<{ $selected: boolean }>`
   align-items: center;
   background: ${({ $selected }) => ($selected ? '#eff6ff' : '#ffffff')};

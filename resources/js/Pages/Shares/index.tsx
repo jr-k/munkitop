@@ -23,10 +23,9 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
     const { t } = useI18n();
     const adminEmail = props.auth.admin?.email ?? 'admin';
     const [search, setSearch] = useState('');
-    const [peopleOpen, setPeopleOpen] = useState(false);
-    const [groupsOpen, setGroupsOpen] = useState(false);
-    const [selectedPersonIds, setSelectedPersonIds] = useState<number[]>([]);
-    const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
+    const [targetsOpen, setTargetsOpen] = useState(false);
+    const [targetSearch, setTargetSearch] = useState('');
+    const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
     const [shareToEdit, setShareToEdit] = useState<MobileconfigShare | null>(null);
     const [shareToDelete, setShareToDelete] = useState<MobileconfigShare | null>(null);
     const [selectedShareIds, setSelectedShareIds] = useState<number[]>([]);
@@ -39,10 +38,25 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
     const form = useForm({
         expires_in: 'keep',
     });
-    const peopleDropdownRef = useRef<HTMLDivElement | null>(null);
-    const groupsDropdownRef = useRef<HTMLDivElement | null>(null);
-    const selectedPeople = people.filter((person) => selectedPersonIds.includes(person.id));
-    const selectedGroups = groups.filter((group) => selectedGroupIds.includes(group.id));
+    const targetsDropdownRef = useRef<HTMLDivElement | null>(null);
+    const targetOptions = [
+        ...groups.map((group) => ({
+            id: `group:${group.id}`,
+            label: group.name,
+            eyebrow: group.slug,
+            type: 'group' as const,
+        })),
+        ...people.map((person) => ({
+            id: `person:${person.id}`,
+            label: personLabel(person),
+            eyebrow: person.email,
+            type: 'person' as const,
+        })),
+    ];
+    const selectedTargets = targetOptions.filter((target) => selectedTargetIds.includes(target.id));
+    const filteredTargets = targetOptions.filter((target) =>
+        [target.eyebrow, target.label].join(' ').toLowerCase().includes(targetSearch.trim().toLowerCase()),
+    );
 
     const filteredShares = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -61,19 +75,12 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                     return false;
                 }
 
-                if (selectedPersonIds.length === 0 && selectedGroupIds.length === 0) {
+                if (selectedTargetIds.length === 0) {
                     return true;
                 }
 
-                const matchesPerson = share.target.type === 'person'
-                    && share.target.id !== null
-                    && selectedPersonIds.includes(share.target.id);
-
-                const matchesGroup = share.target.type === 'group'
-                    && share.target.id !== null
-                    && selectedGroupIds.includes(share.target.id);
-
-                return matchesPerson || matchesGroup;
+                return share.target.id !== null
+                    && selectedTargetIds.includes(`${share.target.type}:${share.target.id}`);
             })
             .sort((firstShare, secondShare) => {
                 const comparison = String(sortValue(firstShare, sort.key)).localeCompare(
@@ -88,7 +95,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
 
                 return firstShare.ulid.localeCompare(secondShare.ulid, undefined, { sensitivity: 'base' });
             });
-    }, [search, selectedGroupIds, selectedPersonIds, shares, sort]);
+    }, [search, selectedTargetIds, shares, sort]);
 
     function personLabel(person: Person) {
         return [person.first_name, person.name].filter(Boolean).join(' ');
@@ -155,19 +162,11 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
         });
     }
 
-    function togglePerson(personId: number) {
-        setSelectedPersonIds((current) =>
-            current.includes(personId)
-                ? current.filter((selectedId) => selectedId !== personId)
-                : [...current, personId],
-        );
-    }
-
-    function toggleGroup(groupId: number) {
-        setSelectedGroupIds((current) =>
-            current.includes(groupId)
-                ? current.filter((selectedId) => selectedId !== groupId)
-                : [...current, groupId],
+    function toggleTarget(targetId: string) {
+        setSelectedTargetIds((current) =>
+            current.includes(targetId)
+                ? current.filter((selectedId) => selectedId !== targetId)
+                : [...current, targetId],
         );
     }
 
@@ -212,24 +211,24 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
     }, [copiedShareId]);
 
     useEffect(() => {
-        if (!peopleOpen && !groupsOpen) {
+        if (!targetsOpen) {
             return;
         }
 
         function closeOnEscape(event: KeyboardEvent) {
             if (event.key === 'Escape') {
-                setPeopleOpen(false);
-                setGroupsOpen(false);
+                setTargetsOpen(false);
+                setTargetSearch('');
             }
         }
 
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [peopleOpen, groupsOpen]);
+    }, [targetsOpen]);
 
     useEffect(() => {
-        if (!peopleOpen && !groupsOpen) {
+        if (!targetsOpen) {
             return;
         }
 
@@ -240,18 +239,18 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                 return;
             }
 
-            if (peopleDropdownRef.current?.contains(target) || groupsDropdownRef.current?.contains(target)) {
+            if (targetsDropdownRef.current?.contains(target)) {
                 return;
             }
 
-            setPeopleOpen(false);
-            setGroupsOpen(false);
+            setTargetsOpen(false);
+            setTargetSearch('');
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
 
         return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-    }, [peopleOpen, groupsOpen]);
+    }, [targetsOpen]);
 
     return (
         <>
@@ -288,79 +287,59 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                 />
                             </S.FilterControl>
                             <S.FilterControl>
-                                <span>{t('groups.people')}</span>
-                                <S.FilterDropdown ref={peopleDropdownRef}>
-                                    <S.ChipTrigger type="button" onClick={() => setPeopleOpen((open) => !open)}>
-                                        {selectedPeople.length === 0 ? (
+                                <span>{t('shares.target')}</span>
+                                <S.FilterDropdown ref={targetsDropdownRef}>
+                                    <S.ChipTrigger type="button" onClick={() => setTargetsOpen((open) => !open)}>
+                                        {selectedTargets.length === 0 ? (
                                             <S.Placeholder>{t('common.all')}</S.Placeholder>
                                         ) : (
-                                            <S.ChipList>
-                                                {selectedPeople.map((person) => (
-                                                    <S.Chip key={person.id}>{personLabel(person)}</S.Chip>
-                                                ))}
-                                            </S.ChipList>
+                                            <S.SelectionSummary>
+                                                {selectedTargets.length === 1 ? (
+                                                    <S.TargetOption>
+                                                        <TargetIcon type={selectedTargets[0].type} />
+                                                        <span>
+                                                            <S.OptionLabel>{selectedTargets[0].label}</S.OptionLabel>
+                                                            <S.OptionEyebrow>{selectedTargets[0].eyebrow}</S.OptionEyebrow>
+                                                        </span>
+                                                    </S.TargetOption>
+                                                ) : (
+                                                    <S.OptionLabel>{t('assignments.selectedTargets', { count: selectedTargets.length })}</S.OptionLabel>
+                                                )}
+                                            </S.SelectionSummary>
                                         )}
                                         <S.Caret aria-hidden="true">▾</S.Caret>
                                     </S.ChipTrigger>
-                                    {peopleOpen ? (
+                                    {targetsOpen ? (
                                         <S.DropdownMenu>
-                                            {people.map((person) => {
-                                                const selected = selectedPersonIds.includes(person.id);
+                                            <S.DropdownSearch
+                                                value={targetSearch}
+                                                onChange={(event) => setTargetSearch(event.target.value)}
+                                                placeholder={`${t('common.search')}...`}
+                                                autoFocus
+                                            />
+                                            <S.DropdownList>
+                                                {filteredTargets.map((target) => {
+                                                    const selected = selectedTargetIds.includes(target.id);
 
-                                                return (
-                                                    <S.DropdownOption
-                                                        key={person.id}
-                                                        type="button"
-                                                        $selected={selected}
-                                                        onClick={() => togglePerson(person.id)}
-                                                    >
-                                                        <span>
-                                                            <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
-                                                            <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
-                                                        </span>
-                                                        {selected ? <span aria-hidden="true">✓</span> : null}
-                                                    </S.DropdownOption>
-                                                );
-                                            })}
-                                        </S.DropdownMenu>
-                                    ) : null}
-                                </S.FilterDropdown>
-                            </S.FilterControl>
-                            <S.FilterControl>
-                                <span>{t('common.groups')}</span>
-                                <S.FilterDropdown ref={groupsDropdownRef}>
-                                    <S.ChipTrigger type="button" onClick={() => setGroupsOpen((open) => !open)}>
-                                        {selectedGroups.length === 0 ? (
-                                            <S.Placeholder>{t('common.all')}</S.Placeholder>
-                                        ) : (
-                                            <S.ChipList>
-                                                {selectedGroups.map((group) => (
-                                                    <S.Chip key={group.id}>{group.name}</S.Chip>
-                                                ))}
-                                            </S.ChipList>
-                                        )}
-                                        <S.Caret aria-hidden="true">▾</S.Caret>
-                                    </S.ChipTrigger>
-                                    {groupsOpen ? (
-                                        <S.DropdownMenu>
-                                            {groups.map((group) => {
-                                                const selected = selectedGroupIds.includes(group.id);
-
-                                                return (
-                                                    <S.DropdownOption
-                                                        key={group.id}
-                                                        type="button"
-                                                        $selected={selected}
-                                                        onClick={() => toggleGroup(group.id)}
-                                                    >
-                                                        <span>
-                                                            <S.OptionLabel>{group.name}</S.OptionLabel>
-                                                            <S.OptionEyebrow>{group.slug}</S.OptionEyebrow>
-                                                        </span>
-                                                        {selected ? <span aria-hidden="true">✓</span> : null}
-                                                    </S.DropdownOption>
-                                                );
-                                            })}
+                                                    return (
+                                                        <S.DropdownOption
+                                                            key={target.id}
+                                                            type="button"
+                                                            $selected={selected}
+                                                            onClick={() => toggleTarget(target.id)}
+                                                        >
+                                                            <S.TargetOption>
+                                                                <TargetIcon type={target.type} />
+                                                                <span>
+                                                                    <S.OptionLabel>{target.label}</S.OptionLabel>
+                                                                    <S.OptionEyebrow>{target.eyebrow}</S.OptionEyebrow>
+                                                                </span>
+                                                            </S.TargetOption>
+                                                            {selected ? <span aria-hidden="true">✓</span> : null}
+                                                        </S.DropdownOption>
+                                                    );
+                                                })}
+                                            </S.DropdownList>
                                         </S.DropdownMenu>
                                     ) : null}
                                 </S.FilterDropdown>

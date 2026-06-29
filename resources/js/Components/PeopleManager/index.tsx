@@ -22,6 +22,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [groupsOpen, setGroupsOpen] = useState(false);
     const [editGroupsOpen, setEditGroupsOpen] = useState(false);
     const [filterGroupsOpen, setFilterGroupsOpen] = useState(false);
+    const [filterGroupsSearch, setFilterGroupsSearch] = useState('');
     const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
     const [includeWithoutOptionalTeam, setIncludeWithoutOptionalTeam] = useState(false);
     const [search, setSearch] = useState('');
@@ -68,6 +69,12 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const selectedGroups = selectableGroups.filter((group) => form.data.group_ids.includes(group.id));
     const selectedEditGroups = selectableGroups.filter((group) => editForm.data.group_ids.includes(group.id));
     const selectedFilterGroups = selectableGroups.filter((group) => selectedTeamIds.includes(group.id));
+    const normalizedFilterGroupsSearch = filterGroupsSearch.trim().toLowerCase();
+    const filteredSelectableGroups = selectableGroups.filter((group) =>
+        group.name.toLowerCase().includes(normalizedFilterGroupsSearch),
+    );
+    const showWithoutOptionalTeamOption = !normalizedFilterGroupsSearch
+        || t('people.withoutOptionalTeam').toLowerCase().includes(normalizedFilterGroupsSearch);
     const normalizedSearch = search.trim().toLowerCase();
     const visiblePeople = people
         .filter((person) => {
@@ -228,6 +235,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 setGroupsOpen(false);
                 setEditGroupsOpen(false);
                 setFilterGroupsOpen(false);
+                setFilterGroupsSearch('');
                 return;
             }
 
@@ -278,6 +286,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
             setGroupsOpen(false);
             setEditGroupsOpen(false);
             setFilterGroupsOpen(false);
+            setFilterGroupsSearch('');
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
@@ -447,7 +456,13 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                             </S.ChipTrigger>
                             {filterGroupsOpen ? (
                                 <S.DropdownMenu>
-                                    {selectableGroups.map((group) => {
+                                    <S.DropdownSearch
+                                        value={filterGroupsSearch}
+                                        onChange={(event) => setFilterGroupsSearch(event.target.value)}
+                                        placeholder={`${t('common.search')}...`}
+                                        autoFocus
+                                    />
+                                    {filteredSelectableGroups.map((group) => {
                                         const selected = selectedTeamIds.includes(group.id);
 
                                         return (
@@ -462,14 +477,16 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                             </S.DropdownOption>
                                         );
                                     })}
-                                    <S.DropdownOption
-                                        type="button"
-                                        $selected={includeWithoutOptionalTeam}
-                                        onClick={() => setIncludeWithoutOptionalTeam((selected) => !selected)}
-                                    >
-                                        <span>{t('people.withoutOptionalTeam')}</span>
-                                        {includeWithoutOptionalTeam ? <span aria-hidden="true">✓</span> : null}
-                                    </S.DropdownOption>
+                                    {showWithoutOptionalTeamOption ? (
+                                        <S.DropdownOption
+                                            type="button"
+                                            $selected={includeWithoutOptionalTeam}
+                                            onClick={() => setIncludeWithoutOptionalTeam((selected) => !selected)}
+                                        >
+                                            <span>{t('people.withoutOptionalTeam')}</span>
+                                            {includeWithoutOptionalTeam ? <span aria-hidden="true">✓</span> : null}
+                                        </S.DropdownOption>
+                                    ) : null}
                                 </S.DropdownMenu>
                             ) : null}
                         </S.FilterDropdown>

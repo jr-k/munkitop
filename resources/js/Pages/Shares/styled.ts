@@ -96,7 +96,7 @@ export const ChipDropdown = styled.div`
 `;
 
 export const FilterDropdown = styled(ChipDropdown)`
-  min-width: 240px;
+  min-width: 280px;
 
   @media (max-width: 640px) {
     width: 100%;
@@ -127,11 +127,14 @@ export const ChipList = styled.span`
 `;
 
 export const Chip = styled.span`
+  align-items: center;
   background: #dbeafe;
   border-radius: 999px;
   color: #1d4ed8;
+  display: inline-flex;
   font-size: 12px;
   font-weight: 700;
+  gap: 5px;
   padding: 4px 9px;
 `;
 
@@ -148,15 +151,28 @@ export const DropdownMenu = styled.div`
   border-radius: 12px;
   box-shadow: 0 14px 30px rgb(15 23 42 / 12%);
   display: grid;
-  gap: 4px;
+  gap: 8px;
   left: 0;
   margin-top: 6px;
-  max-height: 220px;
-  overflow: auto;
   padding: 6px;
   position: absolute;
   right: 0;
-  z-index: 10;
+  z-index: 20;
+`;
+
+export const DropdownSearch = styled.input`
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #0f172a;
+  padding: 9px 10px;
+`;
+
+export const DropdownList = styled.div`
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  overflow: auto;
 `;
 
 export const DropdownOption = styled.button<{ $selected: boolean }>`
@@ -176,8 +192,18 @@ export const DropdownOption = styled.button<{ $selected: boolean }>`
   }
 `;
 
+export const TargetOption = styled.span`
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+`;
+
 export const OptionLabel = styled.span`
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const OptionEyebrow = styled.span`
@@ -186,6 +212,15 @@ export const OptionEyebrow = styled.span`
   font-size: 12px;
   font-weight: 600;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const SelectionSummary = styled.span`
+  align-items: center;
+  display: flex;
+  min-width: 0;
 `;
 
 export const TableCard = styled.div`

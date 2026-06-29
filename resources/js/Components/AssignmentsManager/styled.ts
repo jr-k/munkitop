@@ -61,13 +61,14 @@ export const FilterMeta = styled.span`
 export const FilterControls = styled.div`
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-wrap: nowrap;
+  gap: 8px;
   justify-content: flex-end;
   margin-left: auto;
-
+  min-width: 0;
 
   @media (max-width: 640px) {
+    flex-wrap: wrap;
     justify-content: flex-start;
     margin-left: 0;
     width: 100%;
@@ -80,7 +81,9 @@ export const FilterControl = styled.label`
   display: flex;
   font-size: 13px;
   font-weight: 700;
-  gap: 10px;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
 `;
 
 export const FilterInput = styled.input`
@@ -88,7 +91,9 @@ export const FilterInput = styled.input`
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   color: #0f172a;
+  min-width: 0;
   padding: 9px 12px;
+  width: 170px;
 `;
 
 export const FilterSelect = styled.select`
@@ -96,12 +101,14 @@ export const FilterSelect = styled.select`
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   color: #0f172a;
+  min-width: 0;
   padding: 9px 12px;
+  width: 116px;
 `;
 
 export const FilterDropdown = styled.div`
-  position: relative;
   min-width: 240px;
+  position: relative;
 
   @media (max-width: 640px) {
     width: 100%;
@@ -175,6 +182,12 @@ export const DropdownTrigger = styled.button`
   &:hover {
     border-color: #93c5fd;
   }
+`;
+
+export const FilterDropdownTrigger = styled(DropdownTrigger)`
+  border-radius: 12px;
+  min-height: 43px;
+  padding: 8px 10px;
 `;
 
 export const Placeholder = styled.span`

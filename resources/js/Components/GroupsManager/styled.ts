@@ -101,14 +101,6 @@ export const FilterInput = styled.input`
   padding: 9px 12px;
 `;
 
-export const FilterDropdown = styled(ChipDropdown)`
-  min-width: 240px;
-
-  @media (max-width: 640px) {
-    width: 100%;
-  }
-`;
-
 export const Input = styled.input`
   border: 1px solid #cbd5e1;
   border-radius: 12px;
@@ -124,6 +116,14 @@ export const Textarea = styled.textarea`
 
 export const ChipDropdown = styled.div`
   position: relative;
+`;
+
+export const FilterDropdown = styled(ChipDropdown)`
+  min-width: 240px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
 `;
 
 export const ChipTrigger = styled.button`
@@ -180,6 +180,14 @@ export const DropdownMenu = styled.div`
   position: absolute;
   right: 0;
   z-index: 10;
+`;
+
+export const DropdownSearch = styled.input`
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #0f172a;
+  padding: 9px 10px;
 `;
 
 export const DropdownOption = styled.button<{ $selected: boolean }>`
