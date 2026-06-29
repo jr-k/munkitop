@@ -99,6 +99,15 @@ export const FilterSelect = styled.select`
   padding: 9px 12px;
 `;
 
+export const FilterDropdown = styled.div`
+  position: relative;
+  min-width: 240px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
 export const Form = styled.form`
   display: grid;
   gap: 14px;

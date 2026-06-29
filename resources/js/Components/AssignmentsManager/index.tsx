@@ -36,6 +36,10 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const [search, setSearch] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
     const [targetFilter, setTargetFilter] = useState('all');
+    const [peopleFilterOpen, setPeopleFilterOpen] = useState(false);
+    const [groupsFilterOpen, setGroupsFilterOpen] = useState(false);
+    const [selectedFilterPersonIds, setSelectedFilterPersonIds] = useState<number[]>([]);
+    const [selectedFilterGroupIds, setSelectedFilterGroupIds] = useState<number[]>([]);
     const [sort, setSort] = useState<{ key: AssignmentSortKey; direction: SortDirection }>({
         key: 'package',
         direction: 'asc',
@@ -44,6 +48,8 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const packageDropdownRef = useRef<HTMLDivElement | null>(null);
     const targetDropdownRef = useRef<HTMLDivElement | null>(null);
+    const peopleFilterDropdownRef = useRef<HTMLDivElement | null>(null);
+    const groupsFilterDropdownRef = useRef<HTMLDivElement | null>(null);
     const form = useForm<AssignmentFormData>({
         package_ids: [],
         targets: [],
@@ -89,6 +95,8 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     ];
     const selectedPackages = packages.filter((pkg) => form.data.package_ids.includes(String(pkg.id)));
     const selectedTargets = targetOptions.filter((target) => form.data.targets.includes(target.id));
+    const selectedFilterPeople = people.filter((person) => selectedFilterPersonIds.includes(person.id));
+    const selectedFilterGroups = groups.filter((group) => selectedFilterGroupIds.includes(group.id));
     const filteredPackages = packages.filter((pkg) =>
         [pkg.display_name, pkg.munki_name].join(' ').toLowerCase().includes(packageSearch.trim().toLowerCase()),
     );
@@ -114,6 +122,22 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         );
     }
 
+    function toggleFilterPerson(personId: number) {
+        setSelectedFilterPersonIds((current) =>
+            current.includes(personId)
+                ? current.filter((selectedId) => selectedId !== personId)
+                : [...current, personId],
+        );
+    }
+
+    function toggleFilterGroup(groupId: number) {
+        setSelectedFilterGroupIds((current) =>
+            current.includes(groupId)
+                ? current.filter((selectedId) => selectedId !== groupId)
+                : [...current, groupId],
+        );
+    }
+
     const normalizedSearch = search.trim().toLowerCase();
     const filteredAssignments = assignments
         .filter((assignment) => {
@@ -127,11 +151,30 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 .join(' ')
                 .toLowerCase();
 
-            return (
-                (!normalizedSearch || searchable.includes(normalizedSearch)) &&
-                (actionFilter === 'all' || actionFilter === assignment.action) &&
-                (targetFilter === 'all' || targetFilter === assignment.target.type)
-            );
+            if (normalizedSearch && !searchable.includes(normalizedSearch)) {
+                return false;
+            }
+
+            if (actionFilter !== 'all' && actionFilter !== assignment.action) {
+                return false;
+            }
+
+            if (targetFilter !== 'all' && targetFilter !== assignment.target.type) {
+                return false;
+            }
+
+            if (selectedFilterPersonIds.length === 0 && selectedFilterGroupIds.length === 0) {
+                return true;
+            }
+
+            const matchesPerson = assignment.target.type === 'person'
+                && assignment.target.id !== null
+                && selectedFilterPersonIds.includes(assignment.target.id);
+            const matchesGroup = assignment.target.type === 'group'
+                && assignment.target.id !== null
+                && selectedFilterGroupIds.includes(assignment.target.id);
+
+            return matchesPerson || matchesGroup;
         })
         .sort((firstAssignment, secondAssignment) => {
             const comparison = String(sortValue(firstAssignment, sort.key)).localeCompare(
@@ -207,7 +250,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     }
 
     useEffect(() => {
-        if (!createOpen) {
+        if (!createOpen && !peopleFilterOpen && !groupsFilterOpen) {
             return;
         }
 
@@ -216,24 +259,28 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 return;
             }
 
-            if (packageDropdownOpen || targetDropdownOpen) {
+            if (packageDropdownOpen || targetDropdownOpen || peopleFilterOpen || groupsFilterOpen) {
                 setPackageDropdownOpen(false);
                 setTargetDropdownOpen(false);
+                setPeopleFilterOpen(false);
+                setGroupsFilterOpen(false);
                 setPackageSearch('');
                 setTargetSearch('');
                 return;
             }
 
-            closeCreateModal();
+            if (createOpen) {
+                closeCreateModal();
+            }
         }
 
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, packageDropdownOpen, targetDropdownOpen]);
+    }, [createOpen, packageDropdownOpen, targetDropdownOpen, peopleFilterOpen, groupsFilterOpen]);
 
     useEffect(() => {
-        if (!packageDropdownOpen && !targetDropdownOpen) {
+        if (!packageDropdownOpen && !targetDropdownOpen && !peopleFilterOpen && !groupsFilterOpen) {
             return;
         }
 
@@ -244,18 +291,25 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 return;
             }
 
-            if (packageDropdownRef.current?.contains(target) || targetDropdownRef.current?.contains(target)) {
+            if (
+                packageDropdownRef.current?.contains(target)
+                || targetDropdownRef.current?.contains(target)
+                || peopleFilterDropdownRef.current?.contains(target)
+                || groupsFilterDropdownRef.current?.contains(target)
+            ) {
                 return;
             }
 
             setPackageDropdownOpen(false);
             setTargetDropdownOpen(false);
+            setPeopleFilterOpen(false);
+            setGroupsFilterOpen(false);
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
 
         return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-    }, [packageDropdownOpen, targetDropdownOpen]);
+    }, [packageDropdownOpen, targetDropdownOpen, peopleFilterOpen, groupsFilterOpen]);
 
     return (
         <S.AssignmentsManagerContainer>
@@ -487,6 +541,110 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                             <option value="group">{t('common.groups')}</option>
                             <option value="person">{t('common.people')}</option>
                         </S.FilterSelect>
+                    </S.FilterControl>
+                    <S.FilterControl>
+                        <span>{t('groups.people')}</span>
+                        <S.FilterDropdown ref={peopleFilterDropdownRef}>
+                            <S.DropdownTrigger type="button" onClick={() => setPeopleFilterOpen((open) => !open)}>
+                                {selectedFilterPeople.length === 0 ? (
+                                    <S.Placeholder>{t('common.all')}</S.Placeholder>
+                                ) : (
+                                    <S.SelectionSummary>
+                                        {selectedFilterPeople.length === 1 ? (
+                                            <S.TargetOption>
+                                                <TargetIcon type="person" />
+                                                <span>
+                                                    <S.OptionEyebrow>{selectedFilterPeople[0].email}</S.OptionEyebrow>
+                                                    <S.OptionLabel>{personLabel(selectedFilterPeople[0])}</S.OptionLabel>
+                                                </span>
+                                            </S.TargetOption>
+                                        ) : (
+                                            <S.OptionLabel>{t('assignments.selectedTargets', { count: selectedFilterPeople.length })}</S.OptionLabel>
+                                        )}
+                                    </S.SelectionSummary>
+                                )}
+                                <S.Caret aria-hidden="true">▾</S.Caret>
+                            </S.DropdownTrigger>
+                            {peopleFilterOpen ? (
+                                <S.DropdownPanel>
+                                    <S.DropdownList>
+                                        {people.map((person) => {
+                                            const selected = selectedFilterPersonIds.includes(person.id);
+
+                                            return (
+                                                <S.DropdownOption
+                                                    key={person.id}
+                                                    type="button"
+                                                    $selected={selected}
+                                                    onClick={() => toggleFilterPerson(person.id)}
+                                                >
+                                                    <S.TargetOption>
+                                                        <TargetIcon type="person" />
+                                                        <span>
+                                                            <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                            <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                        </span>
+                                                    </S.TargetOption>
+                                                    {selected ? <span aria-hidden="true">✓</span> : null}
+                                                </S.DropdownOption>
+                                            );
+                                        })}
+                                    </S.DropdownList>
+                                </S.DropdownPanel>
+                            ) : null}
+                        </S.FilterDropdown>
+                    </S.FilterControl>
+                    <S.FilterControl>
+                        <span>{t('common.groups')}</span>
+                        <S.FilterDropdown ref={groupsFilterDropdownRef}>
+                            <S.DropdownTrigger type="button" onClick={() => setGroupsFilterOpen((open) => !open)}>
+                                {selectedFilterGroups.length === 0 ? (
+                                    <S.Placeholder>{t('common.all')}</S.Placeholder>
+                                ) : (
+                                    <S.SelectionSummary>
+                                        {selectedFilterGroups.length === 1 ? (
+                                            <S.TargetOption>
+                                                <TargetIcon type="group" />
+                                                <span>
+                                                    <S.OptionEyebrow>{selectedFilterGroups[0].slug}</S.OptionEyebrow>
+                                                    <S.OptionLabel>{selectedFilterGroups[0].name}</S.OptionLabel>
+                                                </span>
+                                            </S.TargetOption>
+                                        ) : (
+                                            <S.OptionLabel>{t('assignments.selectedTargets', { count: selectedFilterGroups.length })}</S.OptionLabel>
+                                        )}
+                                    </S.SelectionSummary>
+                                )}
+                                <S.Caret aria-hidden="true">▾</S.Caret>
+                            </S.DropdownTrigger>
+                            {groupsFilterOpen ? (
+                                <S.DropdownPanel>
+                                    <S.DropdownList>
+                                        {groups.map((group) => {
+                                            const selected = selectedFilterGroupIds.includes(group.id);
+
+                                            return (
+                                                <S.DropdownOption
+                                                    key={group.id}
+                                                    type="button"
+                                                    $selected={selected}
+                                                    onClick={() => toggleFilterGroup(group.id)}
+                                                >
+                                                    <S.TargetOption>
+                                                        <TargetIcon type="group" />
+                                                        <span>
+                                                            <S.OptionEyebrow>{group.slug}</S.OptionEyebrow>
+                                                            <S.OptionLabel>{group.name}</S.OptionLabel>
+                                                        </span>
+                                                    </S.TargetOption>
+                                                    {selected ? <span aria-hidden="true">✓</span> : null}
+                                                </S.DropdownOption>
+                                            );
+                                        })}
+                                    </S.DropdownList>
+                                </S.DropdownPanel>
+                            ) : null}
+                        </S.FilterDropdown>
                     </S.FilterControl>
                 </S.FilterControls>
             </S.FilterBar>

@@ -148,6 +148,7 @@ class MunkiManifestGenerator
             'installer_item_location' => $installerItemLocation,
             'installer_item_hash' => $package->hash,
             'unattended_install' => true,
+            'unattended_uninstall' => true,
         ];
 
         if ($packageExtension === 'dmg') {

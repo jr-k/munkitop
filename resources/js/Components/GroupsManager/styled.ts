@@ -101,6 +101,14 @@ export const FilterInput = styled.input`
   padding: 9px 12px;
 `;
 
+export const FilterDropdown = styled(ChipDropdown)`
+  min-width: 240px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
 export const Input = styled.input`
   border: 1px solid #cbd5e1;
   border-radius: 12px;

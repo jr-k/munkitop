@@ -232,6 +232,14 @@ export const FilterSelect = styled.select`
   padding: 9px 12px;
 `;
 
+export const FilterDropdown = styled(ChipDropdown)`
+  min-width: 240px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
 export const TableCard = styled.div`
   background: #ffffff;
   border: 1px solid #e2e8f0;

@@ -45,8 +45,11 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const [editSlugEdited, setEditSlugEdited] = useState(false);
     const [peopleOpen, setPeopleOpen] = useState(false);
     const [editPeopleOpen, setEditPeopleOpen] = useState(false);
+    const [filterPeopleOpen, setFilterPeopleOpen] = useState(false);
+    const [selectedFilterPersonIds, setSelectedFilterPersonIds] = useState<number[]>([]);
     const createPeopleDropdownRef = useRef<HTMLDivElement | null>(null);
     const editPeopleDropdownRef = useRef<HTMLDivElement | null>(null);
+    const filterPeopleDropdownRef = useRef<HTMLDivElement | null>(null);
     const form = useForm({
         name: '',
         slug: '',
@@ -99,6 +102,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
 
     const selectedPeople = people.filter((person) => form.data.person_ids.includes(person.id));
     const selectedEditPeople = people.filter((person) => editForm.data.person_ids.includes(person.id));
+    const selectedFilterPeople = people.filter((person) => selectedFilterPersonIds.includes(person.id));
 
     function openEditModal(group: Group) {
         setGroupToEdit(group);
@@ -152,6 +156,14 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         );
     }
 
+    function toggleFilterPerson(personId: number) {
+        setSelectedFilterPersonIds((current) =>
+            current.includes(personId)
+                ? current.filter((selectedId) => selectedId !== personId)
+                : [...current, personId],
+        );
+    }
+
     function submitEdit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -166,9 +178,17 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
 
     const normalizedSearch = search.trim().toLowerCase();
     const filteredGroups = groups
-        .filter((group) =>
-            [group.name, group.slug, group.notes ?? ''].join(' ').toLowerCase().includes(normalizedSearch),
-        )
+        .filter((group) => {
+            if (![group.name, group.slug, group.notes ?? ''].join(' ').toLowerCase().includes(normalizedSearch)) {
+                return false;
+            }
+
+            if (selectedFilterPersonIds.length === 0) {
+                return true;
+            }
+
+            return group.people?.some((person) => selectedFilterPersonIds.includes(person.id)) ?? false;
+        })
         .sort((firstGroup, secondGroup) => {
             const comparison = String(sortValue(firstGroup, sort.key)).localeCompare(
                 String(sortValue(secondGroup, sort.key)),
@@ -225,7 +245,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     }
 
     useEffect(() => {
-        if (!createOpen && !manifestToView && !mobileconfigToView && !groupToEdit) {
+        if (!createOpen && !manifestToView && !mobileconfigToView && !groupToEdit && !filterPeopleOpen) {
             return;
         }
 
@@ -244,9 +264,10 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 return;
             }
 
-            if (peopleOpen || editPeopleOpen) {
+            if (peopleOpen || editPeopleOpen || filterPeopleOpen) {
                 setPeopleOpen(false);
                 setEditPeopleOpen(false);
+                setFilterPeopleOpen(false);
                 return;
             }
 
@@ -261,10 +282,10 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, manifestToView, mobileconfigToView, groupToEdit, peopleOpen, editPeopleOpen]);
+    }, [createOpen, manifestToView, mobileconfigToView, groupToEdit, peopleOpen, editPeopleOpen, filterPeopleOpen]);
 
     useEffect(() => {
-        if (!peopleOpen && !editPeopleOpen) {
+        if (!peopleOpen && !editPeopleOpen && !filterPeopleOpen) {
             return;
         }
 
@@ -275,18 +296,23 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 return;
             }
 
-            if (createPeopleDropdownRef.current?.contains(target) || editPeopleDropdownRef.current?.contains(target)) {
+            if (
+                createPeopleDropdownRef.current?.contains(target)
+                || editPeopleDropdownRef.current?.contains(target)
+                || filterPeopleDropdownRef.current?.contains(target)
+            ) {
                 return;
             }
 
             setPeopleOpen(false);
             setEditPeopleOpen(false);
+            setFilterPeopleOpen(false);
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
 
         return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-    }, [peopleOpen, editPeopleOpen]);
+    }, [peopleOpen, editPeopleOpen, filterPeopleOpen]);
 
     return (
         <S.GroupsManagerContainer>
@@ -501,6 +527,45 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={t('groups.searchPlaceholder')}
                         />
+                    </S.FilterControl>
+                    <S.FilterControl>
+                        <span>{t('groups.people')}</span>
+                        <S.FilterDropdown ref={filterPeopleDropdownRef}>
+                            <S.ChipTrigger type="button" onClick={() => setFilterPeopleOpen((open) => !open)}>
+                                {selectedFilterPeople.length === 0 ? (
+                                    <S.Placeholder>{t('common.all')}</S.Placeholder>
+                                ) : (
+                                    <S.ChipList>
+                                        {selectedFilterPeople.map((person) => (
+                                            <S.Chip key={person.id}>{personLabel(person)}</S.Chip>
+                                        ))}
+                                    </S.ChipList>
+                                )}
+                                <S.Caret aria-hidden="true">▾</S.Caret>
+                            </S.ChipTrigger>
+                            {filterPeopleOpen ? (
+                                <S.DropdownMenu>
+                                    {people.map((person) => {
+                                        const selected = selectedFilterPersonIds.includes(person.id);
+
+                                        return (
+                                            <S.DropdownOption
+                                                key={person.id}
+                                                type="button"
+                                                $selected={selected}
+                                                onClick={() => toggleFilterPerson(person.id)}
+                                            >
+                                                <span>
+                                                    <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                    <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                </span>
+                                                {selected ? <span aria-hidden="true">✓</span> : null}
+                                            </S.DropdownOption>
+                                        );
+                                    })}
+                                </S.DropdownMenu>
+                            ) : null}
+                        </S.FilterDropdown>
                     </S.FilterControl>
                 </S.FilterControls>
             </S.FilterBar>

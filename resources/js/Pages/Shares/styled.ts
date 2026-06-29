@@ -91,6 +91,103 @@ export const FilterInput = styled.input`
   padding: 9px 12px;
 `;
 
+export const ChipDropdown = styled.div`
+  position: relative;
+`;
+
+export const FilterDropdown = styled(ChipDropdown)`
+  min-width: 240px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
+export const ChipTrigger = styled.button`
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  min-height: 43px;
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+`;
+
+export const Placeholder = styled.span`
+  color: #94a3b8;
+`;
+
+export const ChipList = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+export const Chip = styled.span`
+  background: #dbeafe;
+  border-radius: 999px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 9px;
+`;
+
+export const Caret = styled.span`
+  color: #64748b;
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding-left: 10px;
+`;
+
+export const DropdownMenu = styled.div`
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgb(15 23 42 / 12%);
+  display: grid;
+  gap: 4px;
+  left: 0;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  z-index: 10;
+`;
+
+export const DropdownOption = styled.button<{ $selected: boolean }>`
+  align-items: center;
+  background: ${({ $selected }) => ($selected ? '#eff6ff' : '#ffffff')};
+  border: 0;
+  border-radius: 9px;
+  color: #0f172a;
+  display: flex;
+  font-weight: ${({ $selected }) => ($selected ? 700 : 500)};
+  justify-content: space-between;
+  padding: 9px 10px;
+  text-align: left;
+
+  &:hover {
+    background: #f1f5f9;
+  }
+`;
+
+export const OptionLabel = styled.span`
+  display: block;
+`;
+
+export const OptionEyebrow = styled.span`
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+`;
+
 export const TableCard = styled.div`
   background: #ffffff;
   border: 1px solid #e2e8f0;

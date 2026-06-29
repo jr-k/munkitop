@@ -238,6 +238,10 @@ class MunkiProfileController extends Controller
             <integer>1</integer>
             <key>SoftwareRepoURL</key>
             <string>{$repoUrl}</string>
+            <key>SuppressAutoInstall</key>
+            <false/>
+            <key>SuppressLoginwindowInstall</key>
+            <false/>
         </dict>
     </array>
     <key>PayloadDescription</key>

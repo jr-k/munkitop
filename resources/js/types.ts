@@ -85,6 +85,7 @@ export type MobileconfigShare = {
     url: string;
     target: {
         type: 'person' | 'group' | 'missing';
+        id: number | null;
         name: string | null;
         identifier: string | null;
     };

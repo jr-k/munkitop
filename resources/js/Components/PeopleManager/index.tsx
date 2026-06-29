@@ -21,7 +21,9 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [createOpen, setCreateOpen] = useState(false);
     const [groupsOpen, setGroupsOpen] = useState(false);
     const [editGroupsOpen, setEditGroupsOpen] = useState(false);
-    const [selectedTeamId, setSelectedTeamId] = useState('all');
+    const [filterGroupsOpen, setFilterGroupsOpen] = useState(false);
+    const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
+    const [includeWithoutOptionalTeam, setIncludeWithoutOptionalTeam] = useState(false);
     const [search, setSearch] = useState('');
     const [manifestToView, setManifestToView] = useState<{ title: string; manifest: ManifestPreview } | null>(null);
     const [mobileconfigToView, setMobileconfigToView] = useState<Person | null>(null);
@@ -35,6 +37,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const createGroupsDropdownRef = useRef<HTMLDivElement | null>(null);
     const editGroupsDropdownRef = useRef<HTMLDivElement | null>(null);
+    const filterGroupsDropdownRef = useRef<HTMLDivElement | null>(null);
     const form = useForm({
         name: '',
         first_name: '',
@@ -64,6 +67,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const selectableGroups = groups.filter((group) => !group.is_system);
     const selectedGroups = selectableGroups.filter((group) => form.data.group_ids.includes(group.id));
     const selectedEditGroups = selectableGroups.filter((group) => editForm.data.group_ids.includes(group.id));
+    const selectedFilterGroups = selectableGroups.filter((group) => selectedTeamIds.includes(group.id));
     const normalizedSearch = search.trim().toLowerCase();
     const visiblePeople = people
         .filter((person) => {
@@ -80,15 +84,14 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 return false;
             }
 
-            if (selectedTeamId === 'all') {
+            if (selectedTeamIds.length === 0 && !includeWithoutOptionalTeam) {
                 return true;
             }
 
-            if (selectedTeamId === 'none') {
-                return person.groups.every((group) => group.is_system);
-            }
+            const hasSelectedTeam = person.groups.some((group) => selectedTeamIds.includes(group.id));
+            const hasNoOptionalTeam = person.groups.every((group) => group.is_system);
 
-            return person.groups.some((group) => group.id === Number(selectedTeamId));
+            return hasSelectedTeam || (includeWithoutOptionalTeam && hasNoOptionalTeam);
         })
         .sort((firstPerson, secondPerson) => {
             const comparison = String(sortValue(firstPerson, sort.key)).localeCompare(
@@ -191,6 +194,14 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
         );
     }
 
+    function toggleFilterGroup(groupId: number) {
+        setSelectedTeamIds((current) =>
+            current.includes(groupId)
+                ? current.filter((selectedId) => selectedId !== groupId)
+                : [...current, groupId],
+        );
+    }
+
     function submitEdit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -204,7 +215,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     }
 
     useEffect(() => {
-        if (!createOpen && !manifestToView && !mobileconfigToView && !personToEdit) {
+        if (!createOpen && !manifestToView && !mobileconfigToView && !personToEdit && !filterGroupsOpen) {
             return;
         }
 
@@ -213,9 +224,10 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 return;
             }
 
-            if (groupsOpen || editGroupsOpen) {
+            if (groupsOpen || editGroupsOpen || filterGroupsOpen) {
                 setGroupsOpen(false);
                 setEditGroupsOpen(false);
+                setFilterGroupsOpen(false);
                 return;
             }
 
@@ -241,10 +253,10 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, manifestToView, mobileconfigToView, personToEdit, groupsOpen, editGroupsOpen]);
+    }, [createOpen, manifestToView, mobileconfigToView, personToEdit, groupsOpen, editGroupsOpen, filterGroupsOpen]);
 
     useEffect(() => {
-        if (!groupsOpen && !editGroupsOpen) {
+        if (!groupsOpen && !editGroupsOpen && !filterGroupsOpen) {
             return;
         }
 
@@ -255,18 +267,23 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 return;
             }
 
-            if (createGroupsDropdownRef.current?.contains(target) || editGroupsDropdownRef.current?.contains(target)) {
+            if (
+                createGroupsDropdownRef.current?.contains(target)
+                || editGroupsDropdownRef.current?.contains(target)
+                || filterGroupsDropdownRef.current?.contains(target)
+            ) {
                 return;
             }
 
             setGroupsOpen(false);
             setEditGroupsOpen(false);
+            setFilterGroupsOpen(false);
         }
 
         document.addEventListener('mousedown', closeOnOutsideClick);
 
         return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-    }, [groupsOpen, editGroupsOpen]);
+    }, [groupsOpen, editGroupsOpen, filterGroupsOpen]);
 
     return (
         <S.PeopleManagerContainer>
@@ -412,15 +429,50 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     </S.FilterControl>
                     <S.FilterControl>
                         <span>{t('people.team')}</span>
-                        <S.FilterSelect value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)}>
-                            <option value="all">{t('people.allTeams')}</option>
-                            {selectableGroups.map((group) => (
-                                <option key={group.id} value={group.id}>
-                                    {group.name}
-                                </option>
-                            ))}
-                            <option value="none">{t('people.withoutOptionalTeam')}</option>
-                        </S.FilterSelect>
+                        <S.FilterDropdown ref={filterGroupsDropdownRef}>
+                            <S.ChipTrigger type="button" onClick={() => setFilterGroupsOpen((open) => !open)}>
+                                {selectedFilterGroups.length === 0 && !includeWithoutOptionalTeam ? (
+                                    <S.Placeholder>{t('people.allTeams')}</S.Placeholder>
+                                ) : (
+                                    <S.ChipList>
+                                        {selectedFilterGroups.map((group) => (
+                                            <S.Chip key={group.id}>{group.name}</S.Chip>
+                                        ))}
+                                        {includeWithoutOptionalTeam ? (
+                                            <S.Chip>{t('people.withoutOptionalTeam')}</S.Chip>
+                                        ) : null}
+                                    </S.ChipList>
+                                )}
+                                <S.Caret aria-hidden="true">▾</S.Caret>
+                            </S.ChipTrigger>
+                            {filterGroupsOpen ? (
+                                <S.DropdownMenu>
+                                    {selectableGroups.map((group) => {
+                                        const selected = selectedTeamIds.includes(group.id);
+
+                                        return (
+                                            <S.DropdownOption
+                                                key={group.id}
+                                                type="button"
+                                                $selected={selected}
+                                                onClick={() => toggleFilterGroup(group.id)}
+                                            >
+                                                <span>{group.name}</span>
+                                                {selected ? <span aria-hidden="true">✓</span> : null}
+                                            </S.DropdownOption>
+                                        );
+                                    })}
+                                    <S.DropdownOption
+                                        type="button"
+                                        $selected={includeWithoutOptionalTeam}
+                                        onClick={() => setIncludeWithoutOptionalTeam((selected) => !selected)}
+                                    >
+                                        <span>{t('people.withoutOptionalTeam')}</span>
+                                        {includeWithoutOptionalTeam ? <span aria-hidden="true">✓</span> : null}
+                                    </S.DropdownOption>
+                                </S.DropdownMenu>
+                            ) : null}
+                        </S.FilterDropdown>
                     </S.FilterControl>
                 </S.FilterControls>
             </S.FilterBar>

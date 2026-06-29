@@ -1,26 +1,32 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../../Components/AppLayout';
 import ConfirmModal from '../../Components/ConfirmModal';
 import FlashMessage from '../../Components/FlashMessage';
 import TableIcon from '../../Components/TableIcon';
 import TargetIcon from '../../Components/TargetIcon';
 import { useI18n } from '../../i18n';
-import { MobileconfigShare, PageProps } from '../../types';
+import { Group, MobileconfigShare, PageProps, Person } from '../../types';
 import * as S from './styled';
 
 type SharesPageProps = PageProps & {
     shares: MobileconfigShare[];
+    people: Person[];
+    groups: Group[];
 };
 
 type SortDirection = 'asc' | 'desc';
 type LinkSortKey = 'ulid' | 'url' | 'target' | 'type' | 'created_at' | 'expires_at' | 'status';
 
-export default function Shares({ shares }: SharesPageProps) {
+export default function Shares({ shares, people, groups }: SharesPageProps) {
     const { props } = usePage<SharesPageProps>();
     const { t } = useI18n();
     const adminEmail = props.auth.admin?.email ?? 'admin';
     const [search, setSearch] = useState('');
+    const [peopleOpen, setPeopleOpen] = useState(false);
+    const [groupsOpen, setGroupsOpen] = useState(false);
+    const [selectedPersonIds, setSelectedPersonIds] = useState<number[]>([]);
+    const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
     const [shareToEdit, setShareToEdit] = useState<MobileconfigShare | null>(null);
     const [shareToDelete, setShareToDelete] = useState<MobileconfigShare | null>(null);
     const [selectedShareIds, setSelectedShareIds] = useState<number[]>([]);
@@ -33,6 +39,10 @@ export default function Shares({ shares }: SharesPageProps) {
     const form = useForm({
         expires_in: 'keep',
     });
+    const peopleDropdownRef = useRef<HTMLDivElement | null>(null);
+    const groupsDropdownRef = useRef<HTMLDivElement | null>(null);
+    const selectedPeople = people.filter((person) => selectedPersonIds.includes(person.id));
+    const selectedGroups = groups.filter((group) => selectedGroupIds.includes(group.id));
 
     const filteredShares = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -47,7 +57,23 @@ export default function Shares({ shares }: SharesPageProps) {
                     share.target.identifier ?? '',
                 ].join(' ').toLowerCase();
 
-                return !normalizedSearch || searchable.includes(normalizedSearch);
+                if (normalizedSearch && !searchable.includes(normalizedSearch)) {
+                    return false;
+                }
+
+                if (selectedPersonIds.length === 0 && selectedGroupIds.length === 0) {
+                    return true;
+                }
+
+                const matchesPerson = share.target.type === 'person'
+                    && share.target.id !== null
+                    && selectedPersonIds.includes(share.target.id);
+
+                const matchesGroup = share.target.type === 'group'
+                    && share.target.id !== null
+                    && selectedGroupIds.includes(share.target.id);
+
+                return matchesPerson || matchesGroup;
             })
             .sort((firstShare, secondShare) => {
                 const comparison = String(sortValue(firstShare, sort.key)).localeCompare(
@@ -62,7 +88,11 @@ export default function Shares({ shares }: SharesPageProps) {
 
                 return firstShare.ulid.localeCompare(secondShare.ulid, undefined, { sensitivity: 'base' });
             });
-    }, [search, shares, sort]);
+    }, [search, selectedGroupIds, selectedPersonIds, shares, sort]);
+
+    function personLabel(person: Person) {
+        return [person.first_name, person.name].filter(Boolean).join(' ');
+    }
 
     function formatDate(date: string | null) {
         if (!date) {
@@ -125,6 +155,22 @@ export default function Shares({ shares }: SharesPageProps) {
         });
     }
 
+    function togglePerson(personId: number) {
+        setSelectedPersonIds((current) =>
+            current.includes(personId)
+                ? current.filter((selectedId) => selectedId !== personId)
+                : [...current, personId],
+        );
+    }
+
+    function toggleGroup(groupId: number) {
+        setSelectedGroupIds((current) =>
+            current.includes(groupId)
+                ? current.filter((selectedId) => selectedId !== groupId)
+                : [...current, groupId],
+        );
+    }
+
     function openEditModal(share: MobileconfigShare) {
         setShareToEdit(share);
         form.clearErrors();
@@ -165,6 +211,48 @@ export default function Shares({ shares }: SharesPageProps) {
         return () => window.clearTimeout(timeout);
     }, [copiedShareId]);
 
+    useEffect(() => {
+        if (!peopleOpen && !groupsOpen) {
+            return;
+        }
+
+        function closeOnEscape(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setPeopleOpen(false);
+                setGroupsOpen(false);
+            }
+        }
+
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [peopleOpen, groupsOpen]);
+
+    useEffect(() => {
+        if (!peopleOpen && !groupsOpen) {
+            return;
+        }
+
+        function closeOnOutsideClick(event: MouseEvent) {
+            const target = event.target;
+
+            if (!(target instanceof Node)) {
+                return;
+            }
+
+            if (peopleDropdownRef.current?.contains(target) || groupsDropdownRef.current?.contains(target)) {
+                return;
+            }
+
+            setPeopleOpen(false);
+            setGroupsOpen(false);
+        }
+
+        document.addEventListener('mousedown', closeOnOutsideClick);
+
+        return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+    }, [peopleOpen, groupsOpen]);
+
     return (
         <>
             <Head title={t('common.links')} />
@@ -198,6 +286,84 @@ export default function Shares({ shares }: SharesPageProps) {
                                     onChange={(event) => setSearch(event.target.value)}
                                     placeholder={t('shares.searchPlaceholder')}
                                 />
+                            </S.FilterControl>
+                            <S.FilterControl>
+                                <span>{t('groups.people')}</span>
+                                <S.FilterDropdown ref={peopleDropdownRef}>
+                                    <S.ChipTrigger type="button" onClick={() => setPeopleOpen((open) => !open)}>
+                                        {selectedPeople.length === 0 ? (
+                                            <S.Placeholder>{t('common.all')}</S.Placeholder>
+                                        ) : (
+                                            <S.ChipList>
+                                                {selectedPeople.map((person) => (
+                                                    <S.Chip key={person.id}>{personLabel(person)}</S.Chip>
+                                                ))}
+                                            </S.ChipList>
+                                        )}
+                                        <S.Caret aria-hidden="true">▾</S.Caret>
+                                    </S.ChipTrigger>
+                                    {peopleOpen ? (
+                                        <S.DropdownMenu>
+                                            {people.map((person) => {
+                                                const selected = selectedPersonIds.includes(person.id);
+
+                                                return (
+                                                    <S.DropdownOption
+                                                        key={person.id}
+                                                        type="button"
+                                                        $selected={selected}
+                                                        onClick={() => togglePerson(person.id)}
+                                                    >
+                                                        <span>
+                                                            <S.OptionLabel>{personLabel(person)}</S.OptionLabel>
+                                                            <S.OptionEyebrow>{person.email}</S.OptionEyebrow>
+                                                        </span>
+                                                        {selected ? <span aria-hidden="true">✓</span> : null}
+                                                    </S.DropdownOption>
+                                                );
+                                            })}
+                                        </S.DropdownMenu>
+                                    ) : null}
+                                </S.FilterDropdown>
+                            </S.FilterControl>
+                            <S.FilterControl>
+                                <span>{t('common.groups')}</span>
+                                <S.FilterDropdown ref={groupsDropdownRef}>
+                                    <S.ChipTrigger type="button" onClick={() => setGroupsOpen((open) => !open)}>
+                                        {selectedGroups.length === 0 ? (
+                                            <S.Placeholder>{t('common.all')}</S.Placeholder>
+                                        ) : (
+                                            <S.ChipList>
+                                                {selectedGroups.map((group) => (
+                                                    <S.Chip key={group.id}>{group.name}</S.Chip>
+                                                ))}
+                                            </S.ChipList>
+                                        )}
+                                        <S.Caret aria-hidden="true">▾</S.Caret>
+                                    </S.ChipTrigger>
+                                    {groupsOpen ? (
+                                        <S.DropdownMenu>
+                                            {groups.map((group) => {
+                                                const selected = selectedGroupIds.includes(group.id);
+
+                                                return (
+                                                    <S.DropdownOption
+                                                        key={group.id}
+                                                        type="button"
+                                                        $selected={selected}
+                                                        onClick={() => toggleGroup(group.id)}
+                                                    >
+                                                        <span>
+                                                            <S.OptionLabel>{group.name}</S.OptionLabel>
+                                                            <S.OptionEyebrow>{group.slug}</S.OptionEyebrow>
+                                                        </span>
+                                                        {selected ? <span aria-hidden="true">✓</span> : null}
+                                                    </S.DropdownOption>
+                                                );
+                                            })}
+                                        </S.DropdownMenu>
+                                    ) : null}
+                                </S.FilterDropdown>
                             </S.FilterControl>
                         </S.FilterControls>
                     </S.FilterBar>

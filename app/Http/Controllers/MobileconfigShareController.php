@@ -28,6 +28,13 @@ class MobileconfigShareController extends Controller
                     'expired' => (bool) $share->expires_at?->isPast(),
                     'created_at' => $share->created_at?->toIso8601String(),
                 ]),
+            'people' => Person::query()
+                ->orderBy('name', 'asc')
+                ->get(),
+            'groups' => Group::query()
+                ->where('is_system', false)
+                ->orderBy('name', 'asc')
+                ->get(),
         ]);
     }
 
@@ -72,6 +79,7 @@ class MobileconfigShareController extends Controller
         if ($target instanceof Person) {
             return [
                 'type' => 'person',
+                'id' => $target->id,
                 'name' => trim("{$target->first_name} {$target->name}"),
                 'identifier' => $target->client_identifier,
             ];
@@ -80,6 +88,7 @@ class MobileconfigShareController extends Controller
         if ($target instanceof Group) {
             return [
                 'type' => 'group',
+                'id' => $target->id,
                 'name' => $target->name,
                 'identifier' => $target->slug,
             ];
@@ -87,6 +96,7 @@ class MobileconfigShareController extends Controller
 
         return [
             'type' => 'missing',
+            'id' => null,
             'name' => null,
             'identifier' => null,
         ];
