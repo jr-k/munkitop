@@ -120,18 +120,14 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
             return;
         }
 
-        router.post(
-            `/packages/${packageToEdit.id}`,
-            {
-                ...editForm.data,
-                _method: 'put',
-            },
-            {
-                forceFormData: true,
-                onSuccess: closeEditModal,
-                onError: editForm.setError,
-            },
-        );
+        editForm.transform((data) => ({
+            ...data,
+            _method: 'put',
+        }));
+        editForm.post(`/packages/${packageToEdit.id}`, {
+            forceFormData: true,
+            onSuccess: closeEditModal,
+        });
     }
 
     const normalizedSearch = search.trim().toLowerCase();
@@ -234,6 +230,12 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
     const editPackageDownloadUrl = editPackageFileUrl ? `${editPackageFileUrl}?download=1` : null;
     const editPackageIconUrl = packageToEdit?.icon_url ?? null;
     const editPackageRemoteUrl = editForm.data.pkg_url.trim();
+    const createUploadProgress = form.data.pkg_source === 'upload' && form.progress
+        ? Math.round(form.progress.percentage ?? 0)
+        : null;
+    const editUploadProgress = editForm.data.pkg_source === 'upload' && editForm.progress
+        ? Math.round(editForm.progress.percentage ?? 0)
+        : null;
 
     function sortValue(pkg: Package, key: PackageSortKey) {
         if (key === 'source') {
@@ -260,6 +262,35 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         }
 
         return sort.direction === 'asc' ? ' ↑' : ' ↓';
+    }
+
+    function renderUploadProgress(progress: number | null) {
+        if (progress === null) {
+            return null;
+        }
+
+        const boundedProgress = Math.max(0, Math.min(100, progress));
+        const label = boundedProgress >= 100
+            ? t('packages.uploadProcessing')
+            : t('packages.uploadProgress', { percentage: boundedProgress });
+
+        return (
+            <S.UploadProgress>
+                <S.UploadProgressMeta>
+                    <span>{label}</span>
+                    <strong>{boundedProgress}%</strong>
+                </S.UploadProgressMeta>
+                <S.UploadProgressTrack
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={boundedProgress}
+                    aria-label={t('packages.uploadProgressLabel')}
+                >
+                    <S.UploadProgressBar $value={boundedProgress} />
+                </S.UploadProgressTrack>
+            </S.UploadProgress>
+        );
     }
 
     const visiblePackageIds = filteredPackages.map((pkg) => pkg.id);
@@ -448,6 +479,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             </S.SwitchText>
                         </S.SwitchLabel>
                     </S.Full>
+                    {renderUploadProgress(createUploadProgress)}
                     <S.Full>
                         <S.Button type="submit" disabled={form.processing}>
                             {form.processing ? <S.ButtonSpinner aria-label={t('packages.importing')} /> : t('packages.import')}
@@ -648,6 +680,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                     </S.SwitchText>
                                 </S.SwitchLabel>
                             </S.Full>
+                            {renderUploadProgress(editUploadProgress)}
                             <S.ModalActions>
                                 <S.SecondaryButton type="button" onClick={closeEditModal}>
                                     {t('common.cancel')}

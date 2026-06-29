@@ -255,6 +255,40 @@ export const ButtonSpinner = styled.span`
   }
 `;
 
+export const UploadProgress = styled.div`
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+`;
+
+export const UploadProgressMeta = styled.div`
+  align-items: center;
+  color: #475569;
+  display: flex;
+  font-size: 13px;
+  gap: 12px;
+  justify-content: space-between;
+
+  strong {
+    color: #1d4ed8;
+  }
+`;
+
+export const UploadProgressTrack = styled.div`
+  background: #dbeafe;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+`;
+
+export const UploadProgressBar = styled.div<{ $value: number }>`
+  background: linear-gradient(90deg, #2563eb, #06b6d4);
+  border-radius: inherit;
+  height: 100%;
+  transition: width 180ms ease;
+  width: ${({ $value }) => `${$value}%`};
+`;
+
 export const List = styled.div`
   display: grid;
   gap: 10px;
