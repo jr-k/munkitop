@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import TableIcon from '../TableIcon';
 import { TranslationKey, useI18n } from '../../i18n';
 import { ManagedUser, PermissionAction, PermissionResource, UserRole } from '../../types';
 import * as S from './styled';
@@ -168,8 +169,8 @@ export default function UsersManager({ users, permissionResources, permissionAct
                                     <S.PermissionList>
                                         {user.role === 'admin' || user.role === 'owner' ? (
                                             <S.PermissionChip>{t('users.allPermissions')}</S.PermissionChip>
-                                        ) : user.permissions.length > 0 ? (
-                                            user.permissions.map((permission) => (
+                                        ) : visiblePermissions(user.permissions).length > 0 ? (
+                                            visiblePermissions(user.permissions).map((permission) => (
                                                 <S.PermissionChip key={permission}>{permission}</S.PermissionChip>
                                             ))
                                         ) : (
@@ -179,12 +180,25 @@ export default function UsersManager({ users, permissionResources, permissionAct
                                 </S.Td>
                                 <S.Td>
                                     <S.RowActions>
-                                        <S.SecondaryButton type="button" disabled={user.is_owner} onClick={() => openEdit(user)}>
-                                            {t('common.edit')}
-                                        </S.SecondaryButton>
-                                        <S.DangerButton type="button" disabled={user.is_owner} onClick={() => setUserToDelete(user)}>
-                                            {t('common.delete')}
-                                        </S.DangerButton>
+                                        <S.TableIconButton
+                                            type="button"
+                                            disabled={user.is_owner}
+                                            aria-label={t('common.edit')}
+                                            title={t('common.edit')}
+                                            onClick={() => openEdit(user)}
+                                        >
+                                            <TableIcon name="edit" />
+                                        </S.TableIconButton>
+                                        <S.TableIconButton
+                                            type="button"
+                                            $tone="danger"
+                                            disabled={user.is_owner}
+                                            aria-label={t('common.delete')}
+                                            title={t('common.delete')}
+                                            onClick={() => setUserToDelete(user)}
+                                        >
+                                            <TableIcon name="delete" />
+                                        </S.TableIconButton>
                                     </S.RowActions>
                                 </S.Td>
                             </tr>
@@ -361,4 +375,14 @@ function permissionResourceLabel(resource: PermissionResource): TranslationKey {
 
 function permissionActionLabel(action: PermissionAction): TranslationKey {
     return `users.action.${action}` as TranslationKey;
+}
+
+function visiblePermissions(permissions: string[]) {
+    return permissions.filter((permission) => {
+        if (!permission.endsWith('.read')) {
+            return true;
+        }
+
+        return !permissions.includes(permission.replace('.read', '.update'));
+    });
 }

@@ -86,6 +86,29 @@ export const RowActions = styled.div`
   gap: 8px;
 `;
 
+export const TableIconButton = styled.button<{ $tone?: 'danger' | 'neutral' }>`
+  align-items: center;
+  background: ${({ $tone }) => ($tone === 'danger' ? '#fee2e2' : '#eef2ff')};
+  border: 0;
+  border-radius: 10px;
+  color: ${({ $tone }) => ($tone === 'danger' ? '#991b1b' : '#3730a3')};
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  padding: 0;
+  text-decoration: none;
+  width: 38px;
+
+  &:hover:not(:disabled) {
+    background: ${({ $tone }) => ($tone === 'danger' ? '#fecaca' : '#e0e7ff')};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+`;
+
 export const Badge = styled.span`
   background: #dbeafe;
   border-radius: 999px;
