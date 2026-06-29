@@ -10,7 +10,7 @@ class MunkiRepoController extends Controller
 {
     public function index(): Response
     {
-        $repoPath = realpath((string) config('munki.repo_path'));
+        $repoPath = realpath($this->repoPath());
         abort_if($repoPath === false, 404);
 
         return response($this->directoryIndex($repoPath), 200, [
@@ -20,7 +20,7 @@ class MunkiRepoController extends Controller
 
     public function show(string $path): BinaryFileResponse
     {
-        $repoPath = realpath((string) config('munki.repo_path'));
+        $repoPath = realpath($this->repoPath());
         abort_if($repoPath === false, 404);
 
         $filePath = realpath($repoPath.'/'.ltrim($path, '/'));
