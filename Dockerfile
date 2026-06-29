@@ -54,13 +54,20 @@ ENTRYPOINT ["docker-entrypoint"]
 
 FROM php_base AS composer_deps
 COPY composer.json composer.lock ./
-RUN composer install \
+RUN (composer install \
     --no-dev \
     --no-interaction \
     --no-progress \
     --prefer-dist \
     --optimize-autoloader \
-    --no-scripts
+    --no-scripts \
+  || composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-source \
+    --optimize-autoloader \
+    --no-scripts)
 
 FROM php_base AS development
 ENV APP_ENV=local
