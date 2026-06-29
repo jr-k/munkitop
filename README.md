@@ -84,8 +84,6 @@ Important environment variables:
 | --- | --- | --- |
 | `APP_DISPLAY_NAME` | Name displayed in the sidebar and login screen | `Munkitop` |
 | `APP_URL` | Base application URL used to build repository URLs | `http://localhost:8000` |
-| `ADMIN_EMAIL` | Admin login email | `admin@example.com` |
-| `ADMIN_PASSWORD` | Admin login password | `password` |
 | `MUNKI_REPO_PATH` | Local path where the Munki repo is exported | `storage/app/munki_repo` |
 | `MUNKI_DEFAULT_CATALOG` | Default catalog name | `production` |
 | `MUNKI_BASE_MANIFEST` | Base manifest name | `base` |
