@@ -10,6 +10,8 @@ run_as_app_user() {
 }
 
 mkdir -p \
+  /run/nginx \
+  /tmp/nginx-client-body \
   storage/app \
   storage/app/munki_repo \
   storage/framework/cache \
@@ -29,6 +31,7 @@ if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
 fi
 
 if [ "$(id -u)" = "0" ]; then
+  chown -R www-data:www-data /run/nginx /tmp/nginx-client-body
   chown -R www-data:www-data storage bootstrap/cache
 
   if [ -d node_modules ]; then
@@ -54,7 +57,7 @@ fi
 
 run_as_app_user php artisan migrate --force --no-ansi
 
-if [ "$(id -u)" = "0" ]; then
+if [ "$(id -u)" = "0" ] && [ "${1:-}" != "supervisord" ]; then
   exec su-exec www-data "$@"
 fi
 

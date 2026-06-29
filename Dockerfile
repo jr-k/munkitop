@@ -10,7 +10,7 @@ COPY resources ./resources
 COPY vite.config.js tsconfig.json ./
 RUN npm run build
 
-FROM php:8.4-cli-alpine AS php_base
+FROM php:8.4-fpm-alpine AS php_base
 WORKDIR /var/www/html
 
 RUN apk add --no-cache \
@@ -19,9 +19,11 @@ RUN apk add --no-cache \
     git \
     icu-dev \
     libzip-dev \
+    nginx \
     nodejs \
     npm \
     oniguruma-dev \
+    supervisor \
     su-exec \
     sqlite-libs \
     zip \
@@ -31,6 +33,7 @@ RUN apk add --no-cache \
   && docker-php-ext-install \
     bcmath \
     intl \
+    opcache \
     pcntl \
     pdo_mysql \
     pdo_sqlite \
@@ -39,6 +42,10 @@ RUN apk add --no-cache \
 
 COPY --from=composer_bin /usr/bin/composer /usr/bin/composer
 COPY docker/php.ini /usr/local/etc/php/conf.d/uploads.ini
+COPY docker/opcache.ini /usr/local/etc/php/conf.d/opcache-prod.ini
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-munkitop.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint
 RUN chmod +x /usr/local/bin/docker-entrypoint
 
@@ -51,7 +58,7 @@ RUN composer install \
     --no-dev \
     --no-interaction \
     --no-progress \
-    --prefer-source \
+    --prefer-dist \
     --optimize-autoloader \
     --no-scripts
 
@@ -77,4 +84,4 @@ RUN mkdir -p storage/app/munki_repo \
   && composer dump-autoload --optimize --no-dev \
   && chown -R www-data:www-data storage bootstrap/cache database
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
