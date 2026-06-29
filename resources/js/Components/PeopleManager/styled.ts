@@ -381,6 +381,10 @@ export const SecondaryButton = styled.button`
   text-decoration: none;
 `;
 
+export const ResetButton = styled(SecondaryButton)`
+  margin-right: auto;
+`;
+
 export const DangerButton = styled.button`
   background: #fee2e2;
   border: 0;

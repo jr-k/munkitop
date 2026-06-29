@@ -300,6 +300,18 @@ export const TargetTitle = styled.span`
   gap: 10px;
 `;
 
+export const InlinePackage = styled.span`
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+`;
+
+export const InlineTarget = styled.span`
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+`;
+
 export const EmptyOption = styled.div`
   color: #64748b;
   padding: 12px;
@@ -326,6 +338,10 @@ export const SecondaryButton = styled.button`
   justify-content: center;
   padding: 9px 12px;
   text-decoration: none;
+`;
+
+export const ResetButton = styled(SecondaryButton)`
+  margin-right: auto;
 `;
 
 export const List = styled.div`
@@ -387,6 +403,14 @@ export const SortButton = styled.button`
 
 export const PrimaryCell = styled.strong`
   color: #0f172a;
+`;
+
+export const CodePill = styled.code`
+  background: #f1f5f9;
+  border-radius: 999px;
+  color: #334155;
+  font-size: 12px;
+  padding: 4px 8px;
 `;
 
 export const ActionBadge = styled.span<{ $action: 'install' | 'uninstall' }>`
@@ -469,6 +493,13 @@ export const Dialog = styled.div`
   width: min(100%, 900px);
 `;
 
+export const WideDialog = styled(Dialog)`
+  max-height: min(820px, calc(100vh - 48px));
+  max-width: 1080px;
+  overflow: auto;
+  width: min(100%, 1080px);
+`;
+
 export const ModalHeader = styled.div`
   align-items: flex-start;
   display: flex;
@@ -514,4 +545,53 @@ export const ModalActions = styled.div`
   ${SecondaryButton} {
     width: auto;
   }
+`;
+
+export const MatrixControls = styled.div`
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+
+  ${FilterInput} {
+    width: min(420px, 100%);
+  }
+`;
+
+export const SegmentedControl = styled.div`
+  background: #f1f5f9;
+  border-radius: 14px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+`;
+
+export const SegmentButton = styled.button<{ $active: boolean }>`
+  background: ${({ $active }) => ($active ? '#ffffff' : 'transparent')};
+  border: 0;
+  border-radius: 10px;
+  box-shadow: ${({ $active }) => ($active ? '0 6px 16px rgb(15 23 42 / 10%)' : 'none')};
+  color: ${({ $active }) => ($active ? '#1d4ed8' : '#475569')};
+  font-weight: 800;
+  padding: 9px 12px;
+`;
+
+export const MatrixTable = styled(Table)`
+  min-width: 820px;
+`;
+
+export const AssignmentPills = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+export const AssignmentPill = styled.span<{ $action: 'install' | 'uninstall' }>`
+  background: ${({ $action }) => ($action === 'install' ? '#dcfce7' : '#fee2e2')};
+  border-radius: 999px;
+  color: ${({ $action }) => ($action === 'install' ? '#166534' : '#991b1b')};
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
 `;

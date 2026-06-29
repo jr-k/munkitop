@@ -47,15 +47,28 @@ export default function UsersManager({ users, permissionResources, permissionAct
 
     function openEdit(user: ManagedUser) {
         setUserToEdit(user);
-        editForm.clearErrors();
-        editForm.setData({
+        resetEditForm(user);
+    }
+
+    function userFormData(user: ManagedUser): UserFormData {
+        return {
             name: user.name,
             email: user.email,
             password: '',
             role: user.role === 'admin' ? 'admin' : 'user',
             permissions: user.permissions.filter((permission) => permission !== 'export' && permission !== 'users.manage'),
             export: user.permissions.includes('export'),
-        });
+        };
+    }
+
+    function resetCreateForm() {
+        form.clearErrors();
+        form.reset();
+    }
+
+    function resetEditForm(user: ManagedUser) {
+        editForm.clearErrors();
+        editForm.setData(userFormData(user));
     }
 
     function closeCreate() {
@@ -241,6 +254,7 @@ export default function UsersManager({ users, permissionResources, permissionAct
                     permissionResources={sortedPermissionResources}
                     permissionActions={permissionActions}
                     onClose={closeCreate}
+                    onReset={resetCreateForm}
                     onSubmit={submit}
                     togglePermission={togglePermission}
                     passwordRequired
@@ -279,6 +293,7 @@ type UserDialogProps = {
     permissionActions: PermissionAction[];
     passwordRequired?: boolean;
     onClose: () => void;
+    onReset?: () => void;
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
     togglePermission: (form: ReturnType<typeof useForm<UserFormData>>, permission: string) => void;
 };
@@ -291,6 +306,7 @@ function UserDialog({
     permissionActions,
     passwordRequired = false,
     onClose,
+    onReset,
     onSubmit,
     togglePermission,
 }: UserDialogProps) {
@@ -300,8 +316,17 @@ function UserDialog({
     return (
         <S.Overlay onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
             <S.Dialog role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-                <S.DialogTitle>{title}</S.DialogTitle>
-                <S.DialogDescription>{description}</S.DialogDescription>
+                <S.DialogHeader>
+                    <S.DialogHeaderText>
+                        <S.DialogTitle>{title}</S.DialogTitle>
+                        <S.DialogDescription>{description}</S.DialogDescription>
+                    </S.DialogHeaderText>
+                    <S.DialogHeaderActions>
+                        <S.IconButton type="button" onClick={onClose} aria-label={t('common.close')}>
+                            ×
+                        </S.IconButton>
+                    </S.DialogHeaderActions>
+                </S.DialogHeader>
                 <S.Form onSubmit={onSubmit}>
                     <FormField label={t('users.name')} error={form.errors.name}>
                         <S.Input autoFocus value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} />
@@ -373,9 +398,11 @@ function UserDialog({
                     </S.Full>
                     <S.Full>
                         <S.DialogActions>
-                            <S.SecondaryButton type="button" onClick={onClose}>
-                                {t('common.cancel')}
-                            </S.SecondaryButton>
+                            {onReset ? (
+                                <S.ResetButton type="button" onClick={onReset}>
+                                    {t('common.reset')}
+                                </S.ResetButton>
+                            ) : null}
                             <S.Button type="submit" disabled={form.processing}>
                                 {t('common.save')}
                             </S.Button>

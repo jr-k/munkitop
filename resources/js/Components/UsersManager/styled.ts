@@ -47,6 +47,10 @@ export const SecondaryButton = styled(Button)`
   color: #0f172a;
 `;
 
+export const ResetButton = styled(SecondaryButton)`
+  margin-right: auto;
+`;
+
 export const DangerButton = styled(Button)`
   background: #dc2626;
 `;
@@ -156,6 +160,25 @@ export const Dialog = styled.div`
   width: 100%;
 `;
 
+export const DialogHeader = styled.div`
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+`;
+
+export const DialogHeaderText = styled.div`
+  min-width: 0;
+`;
+
+export const DialogHeaderActions = styled.div`
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+`;
+
 export const DialogTitle = styled.h2`
   color: #0f172a;
   margin: 0 0 6px;
@@ -163,7 +186,24 @@ export const DialogTitle = styled.h2`
 
 export const DialogDescription = styled.p`
   color: #64748b;
-  margin: 0 0 18px;
+  margin: 0;
+`;
+
+export const IconButton = styled.button`
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #334155;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 22px;
+  font-weight: 700;
+  height: 36px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 0 2px;
+  width: 36px;
 `;
 
 export const Form = styled.form`

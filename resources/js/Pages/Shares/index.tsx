@@ -196,6 +196,11 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
         form.reset();
     }
 
+    function resetEditForm() {
+        form.clearErrors();
+        form.setData('expires_in', 'keep');
+    }
+
     function submitEdit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -659,9 +664,6 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                     <option value="30d">{t('mobileconfig.expiresInThirtyDays')}</option>
                                 </S.Select>
                                 <S.ModalActions>
-                                    <S.SecondaryButton type="button" onClick={closeEditModal}>
-                                        {t('common.cancel')}
-                                    </S.SecondaryButton>
                                     <S.Button type="submit" disabled={form.processing}>
                                         {t('common.save')}
                                     </S.Button>
@@ -725,9 +727,6 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                 ) : null}
                                 {emailError ? <S.EmailError role="alert">{emailError}</S.EmailError> : null}
                                 <S.ModalActions>
-                                    <S.SecondaryButton type="button" onClick={closeEmailModal}>
-                                        {t('common.cancel')}
-                                    </S.SecondaryButton>
                                     <S.Button type="submit" disabled={sendingEmail || !recipientEmail.trim()}>
                                         {sendingEmail ? t('mobileconfig.emailSending') : t('mobileconfig.emailSend')}
                                     </S.Button>

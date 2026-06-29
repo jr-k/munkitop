@@ -72,6 +72,7 @@ export type Assignment = {
         id: number | null;
         type: 'person' | 'group';
         name: string | null;
+        identifier: string | null;
     };
 };
 

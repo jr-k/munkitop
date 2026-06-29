@@ -33,6 +33,9 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const canUpdateAssignments = can(props, 'assignments', 'update');
     const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
+    const [matrixOpen, setMatrixOpen] = useState(false);
+    const [matrixMode, setMatrixMode] = useState<'profiles' | 'packages'>('profiles');
+    const [matrixSearch, setMatrixSearch] = useState('');
     const [packageDropdownOpen, setPackageDropdownOpen] = useState(false);
     const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
     const [packageSearch, setPackageSearch] = useState('');
@@ -64,6 +67,15 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         setTargetDropdownOpen(false);
         setPackageSearch('');
         setTargetSearch('');
+    }
+
+    function resetCreateForm() {
+        setPackageDropdownOpen(false);
+        setTargetDropdownOpen(false);
+        setPackageSearch('');
+        setTargetSearch('');
+        form.clearErrors();
+        form.reset();
     }
 
     function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -107,6 +119,74 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const filteredTargets = targetOptions.filter((target) =>
         [target.eyebrow, target.label].join(' ').toLowerCase().includes(targetSearch.trim().toLowerCase()),
     );
+    const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
+    const packageMatrixRows = packages
+        .map((pkg) => ({
+            package: pkg,
+            profiles: assignments.filter((assignment) => assignment.package.id === pkg.id),
+        }))
+        .filter((row) => {
+            const searchable = [
+                row.package.display_name,
+                row.package.munki_name,
+                ...row.profiles.flatMap((assignment) => [
+                    assignment.target.name ?? '',
+                    assignment.target.identifier ?? '',
+                    assignment.target.type,
+                    assignment.action,
+                ]),
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
+        });
+    const profileMatrixRows = Object.values(
+        assignments.reduce<
+            Record<
+                string,
+                {
+                    target: Assignment['target'];
+                    assignments: Assignment[];
+                }
+            >
+        >((rows, assignment) => {
+            const key = `${assignment.target.type}:${assignment.target.id}`;
+
+            rows[key] ??= {
+                target: assignment.target,
+                assignments: [],
+            };
+            rows[key].assignments.push(assignment);
+
+            return rows;
+        }, {}),
+    ).filter((row) => {
+        const searchable = [
+            row.target.name ?? '',
+            row.target.identifier ?? '',
+            row.target.type,
+            ...row.assignments.flatMap((assignment) => [
+                assignment.package.name ?? '',
+                assignment.package.munki_name ?? '',
+                assignment.action,
+            ]),
+        ]
+            .join(' ')
+            .toLowerCase();
+
+        return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
+    });
+    const profileMatrixPagination = usePagination(profileMatrixRows, {
+        key: 'assignment_matrix_profiles',
+        syncUrl: matrixOpen && matrixMode === 'profiles',
+    });
+    const paginatedProfileMatrixRows = profileMatrixPagination.items;
+    const packageMatrixPagination = usePagination(packageMatrixRows, {
+        key: 'assignment_matrix_packages',
+        syncUrl: matrixOpen && matrixMode === 'packages',
+    });
+    const paginatedPackageMatrixRows = packageMatrixPagination.items;
 
     function togglePackage(packageId: string) {
         form.setData(
@@ -238,7 +318,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     }
 
     useEffect(() => {
-        if (!createOpen && !targetFilterOpen) {
+        if (!createOpen && !matrixOpen && !targetFilterOpen) {
             return;
         }
 
@@ -259,13 +339,16 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
 
             if (createOpen) {
                 closeCreateModal();
+                return;
             }
+
+            setMatrixOpen(false);
         }
 
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [createOpen, packageDropdownOpen, targetDropdownOpen, targetFilterOpen]);
+    }, [createOpen, matrixOpen, packageDropdownOpen, targetDropdownOpen, targetFilterOpen]);
 
     useEffect(() => {
         if (!packageDropdownOpen && !targetDropdownOpen && !targetFilterOpen) {
@@ -306,6 +389,9 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                     <S.ToolbarDescription>{t('assignments.description')}</S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
+                    <S.SecondaryButton type="button" onClick={() => setMatrixOpen(true)}>
+                        {t('packages.crossView')}
+                    </S.SecondaryButton>
                     {canExport ? (
                         <S.SecondaryButton as="a" href="/assignments/csv">
                             {t('common.exportCsv')}
@@ -492,15 +578,218 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 </S.ActionChoice>
                             </FormField>
                             <S.ModalActions>
-                                <S.SecondaryButton type="button" onClick={closeCreateModal}>
-                                    {t('common.cancel')}
-                                </S.SecondaryButton>
+                                <S.ResetButton type="button" onClick={resetCreateForm}>
+                                    {t('common.reset')}
+                                </S.ResetButton>
                                 <S.Button type="submit" disabled={form.processing}>
                                     {t('assignments.assign')}
                                 </S.Button>
                             </S.ModalActions>
                         </S.Form>
                     </S.Dialog>
+                </S.ModalOverlay>
+            ) : null}
+
+            {matrixOpen ? (
+                <S.ModalOverlay
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) {
+                            setMatrixOpen(false);
+                        }
+                    }}
+                >
+                    <S.WideDialog onClick={(event) => event.stopPropagation()}>
+                        <S.ModalHeader>
+                            <div>
+                                <S.ModalTitle>{t('packages.matrixTitle')}</S.ModalTitle>
+                                <S.ModalDescription>
+                                    {t('packages.matrixDescription')}
+                                </S.ModalDescription>
+                            </div>
+                            <S.IconButton type="button" onClick={() => setMatrixOpen(false)} aria-label={t('common.close')}>
+                                ×
+                            </S.IconButton>
+                        </S.ModalHeader>
+
+                        <S.MatrixControls>
+                            <S.SegmentedControl>
+                                <S.SegmentButton
+                                    type="button"
+                                    $active={matrixMode === 'profiles'}
+                                    onClick={() => setMatrixMode('profiles')}
+                                >
+                                    {t('packages.byProfile')}
+                                </S.SegmentButton>
+                                <S.SegmentButton
+                                    type="button"
+                                    $active={matrixMode === 'packages'}
+                                    onClick={() => setMatrixMode('packages')}
+                                >
+                                    {t('packages.byPackage')}
+                                </S.SegmentButton>
+                            </S.SegmentedControl>
+                            <S.FilterInput
+                                value={matrixSearch}
+                                onChange={(event) => setMatrixSearch(event.target.value)}
+                                placeholder={t('packages.matrixSearch')}
+                            />
+                        </S.MatrixControls>
+
+                        {matrixMode === 'profiles' ? (
+                            <PaginationControls
+                                page={profileMatrixPagination.page}
+                                pageCount={profileMatrixPagination.pageCount}
+                                pageSize={profileMatrixPagination.pageSize}
+                                total={profileMatrixPagination.total}
+                                from={profileMatrixPagination.from}
+                                to={profileMatrixPagination.to}
+                                onPageChange={profileMatrixPagination.setPage}
+                                onPageSizeChange={profileMatrixPagination.setPageSize}
+                            />
+                        ) : (
+                            <PaginationControls
+                                page={packageMatrixPagination.page}
+                                pageCount={packageMatrixPagination.pageCount}
+                                pageSize={packageMatrixPagination.pageSize}
+                                total={packageMatrixPagination.total}
+                                from={packageMatrixPagination.from}
+                                to={packageMatrixPagination.to}
+                                onPageChange={packageMatrixPagination.setPage}
+                                onPageSizeChange={packageMatrixPagination.setPageSize}
+                            />
+                        )}
+                        <S.TableCard>
+                            <S.MatrixTable>
+                                {matrixMode === 'profiles' ? (
+                                    <>
+                                        <thead>
+                                            <tr>
+                                                <th>{t('packages.profile')}</th>
+                                                <th>{t('packages.type')}</th>
+                                                <th>{t('packages.identifier')}</th>
+                                                <th>{t('common.packages')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {profileMatrixRows.length === 0 ? (
+                                                <tr>
+                                                    <S.EmptyCell colSpan={4}>{t('packages.noProfileAssigned')}</S.EmptyCell>
+                                                </tr>
+                                            ) : (
+                                                paginatedProfileMatrixRows.map((row) => (
+                                                    <tr key={`${row.target.type}:${row.target.id}`}>
+                                                        <td>
+                                                            <S.TargetTitle>
+                                                                <TargetIcon type={row.target.type} />
+                                                                <S.PrimaryCell>{row.target.name}</S.PrimaryCell>
+                                                            </S.TargetTitle>
+                                                        </td>
+                                                        <td>{row.target.type === 'group' ? t('common.group') : t('common.person')}</td>
+                                                        <td>{row.target.identifier ? <S.CodePill>{row.target.identifier}</S.CodePill> : '-'}</td>
+                                                        <td>
+                                                            <S.AssignmentPills>
+                                                                {row.assignments.map((assignment) => (
+                                                                    <S.AssignmentPill
+                                                                        key={`${assignment.package.id}:${assignment.action}`}
+                                                                        $action={assignment.action}
+                                                                    >
+                                                                        <S.InlinePackage>
+                                                                            {assignment.action === 'install' ? '+' : '-'}
+                                                                            <PackageIcon
+                                                                                iconUrl={assignment.package.icon_url}
+                                                                                name={assignment.package.name ?? ''}
+                                                                                size="sm"
+                                                                            />
+                                                                            {assignment.package.name}
+                                                                        </S.InlinePackage>
+                                                                    </S.AssignmentPill>
+                                                                ))}
+                                                            </S.AssignmentPills>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </>
+                                ) : (
+                                    <>
+                                        <thead>
+                                            <tr>
+                                                <th>{t('assignments.package')}</th>
+                                                <th>{t('packages.munkiName')}</th>
+                                                <th>{t('packages.profile')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {packageMatrixRows.length === 0 ? (
+                                                <tr>
+                                                    <S.EmptyCell colSpan={3}>{t('packages.noMatrixPackage')}</S.EmptyCell>
+                                                </tr>
+                                            ) : (
+                                                paginatedPackageMatrixRows.map((row) => (
+                                                    <tr key={row.package.id}>
+                                                        <td>
+                                                            <S.PackageTitle>
+                                                                <PackageIcon iconUrl={row.package.icon_url} name={row.package.display_name} />
+                                                                <S.PrimaryCell>{row.package.display_name}</S.PrimaryCell>
+                                                            </S.PackageTitle>
+                                                        </td>
+                                                        <td>
+                                                            <S.CodePill>{row.package.munki_name}</S.CodePill>
+                                                        </td>
+                                                        <td>
+                                                            {row.profiles.length === 0 ? (
+                                                                <S.Meta>{t('packages.noProfile')}</S.Meta>
+                                                            ) : (
+                                                                <S.AssignmentPills>
+                                                                    {row.profiles.map((assignment) => (
+                                                                        <S.AssignmentPill
+                                                                            key={assignment.id}
+                                                                            $action={assignment.action}
+                                                                        >
+                                                                            {assignment.action === 'install' ? '+' : '-'}{' '}
+                                                                            <S.InlineTarget>
+                                                                                {assignment.target.type === 'group' ? t('common.group') : t('common.person')}
+                                                                                <TargetIcon type={assignment.target.type} />
+                                                                                {assignment.target.name}
+                                                                            </S.InlineTarget>
+                                                                        </S.AssignmentPill>
+                                                                    ))}
+                                                                </S.AssignmentPills>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </>
+                                )}
+                            </S.MatrixTable>
+                        </S.TableCard>
+                        {matrixMode === 'profiles' ? (
+                            <PaginationControls
+                                page={profileMatrixPagination.page}
+                                pageCount={profileMatrixPagination.pageCount}
+                                pageSize={profileMatrixPagination.pageSize}
+                                total={profileMatrixPagination.total}
+                                from={profileMatrixPagination.from}
+                                to={profileMatrixPagination.to}
+                                onPageChange={profileMatrixPagination.setPage}
+                                onPageSizeChange={profileMatrixPagination.setPageSize}
+                            />
+                        ) : (
+                            <PaginationControls
+                                page={packageMatrixPagination.page}
+                                pageCount={packageMatrixPagination.pageCount}
+                                pageSize={packageMatrixPagination.pageSize}
+                                total={packageMatrixPagination.total}
+                                from={packageMatrixPagination.from}
+                                to={packageMatrixPagination.to}
+                                onPageChange={packageMatrixPagination.setPage}
+                                onPageSizeChange={packageMatrixPagination.setPageSize}
+                            />
+                        )}
+                    </S.WideDialog>
                 </S.ModalOverlay>
             ) : null}
 

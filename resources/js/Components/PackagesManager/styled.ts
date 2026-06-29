@@ -211,6 +211,10 @@ export const SwitchLabel = styled.label`
   }
 `;
 
+export const SwitchBlock = styled.div`
+  margin-bottom: 12px;
+`;
+
 export const SwitchText = styled.span`
   display: grid;
   gap: 2px;
@@ -256,6 +260,10 @@ export const SecondaryButton = styled.button`
   justify-content: center;
   padding: 11px 14px;
   text-decoration: none;
+`;
+
+export const ResetButton = styled(SecondaryButton)`
+  margin-right: auto;
 `;
 
 export const ButtonSpinner = styled.span`
@@ -581,6 +589,10 @@ export const ModalActions = styled.div`
   display: flex;
   gap: 10px;
   grid-column: 1 / -1;
+  justify-content: flex-end;
+`;
+
+export const ImportActions = styled(ModalActions)`
   justify-content: flex-end;
 `;
 

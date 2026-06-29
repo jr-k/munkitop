@@ -195,6 +195,20 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
         setEditGroupsOpen(false);
         setEditGroupsSearch('');
         editForm.clearErrors();
+        resetEditForm(person);
+    }
+
+    function resetCreateForm() {
+        setGroupsOpen(false);
+        setCreateGroupsSearch('');
+        form.clearErrors();
+        form.reset();
+    }
+
+    function resetEditForm(person: Person) {
+        setEditGroupsOpen(false);
+        setEditGroupsSearch('');
+        editForm.clearErrors();
         editForm.setData({
             name: person.name,
             first_name: person.first_name ?? '',
@@ -453,16 +467,9 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                 </FormField>
                             </S.Full>
                             <S.ModalActions>
-                                <S.SecondaryButton
-                                    type="button"
-                                    onClick={() => {
-                                        setCreateOpen(false);
-                                        setGroupsOpen(false);
-                                        setCreateGroupsSearch('');
-                                    }}
-                                >
-                                    {t('common.cancel')}
-                                </S.SecondaryButton>
+                                <S.ResetButton type="button" onClick={resetCreateForm}>
+                                    {t('common.reset')}
+                                </S.ResetButton>
                                 <S.Button type="submit" disabled={form.processing}>
                                     {t('common.add')}
                                 </S.Button>
@@ -837,9 +844,6 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                 </FormField>
                             </S.Full>
                             <S.ModalActions>
-                                <S.SecondaryButton type="button" onClick={closeEditModal}>
-                                    {t('common.cancel')}
-                                </S.SecondaryButton>
                                 <S.Button type="submit" disabled={editForm.processing}>
                                     {t('common.save')}
                                 </S.Button>

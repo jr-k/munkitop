@@ -38,6 +38,9 @@ class AssignmentController extends Controller
                         'name' => $assignment->assignable instanceof Person
                             ? trim("{$assignment->assignable->first_name} {$assignment->assignable->name}")
                             : $assignment->assignable?->name,
+                        'identifier' => $assignment->assignable instanceof Person
+                            ? $assignment->assignable->client_identifier
+                            : ($assignment->assignable instanceof Group ? $assignment->assignable->slug : null),
                     ],
                 ]),
             'groups' => Group::query()

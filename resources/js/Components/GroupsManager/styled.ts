@@ -259,6 +259,10 @@ export const SecondaryButton = styled.button`
   text-decoration: none;
 `;
 
+export const ResetButton = styled(SecondaryButton)`
+  margin-right: auto;
+`;
+
 export const List = styled.div`
   display: grid;
   gap: 10px;

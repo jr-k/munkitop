@@ -122,6 +122,11 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         form.reset();
     }
 
+    function resetCreateForm() {
+        form.clearErrors();
+        form.reset();
+    }
+
     function submit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         form.post('/packages', {
@@ -135,8 +140,11 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
 
     function openEditModal(pkg: Package) {
         setPackageToEdit(pkg);
-        editForm.clearErrors();
-        editForm.setData({
+        resetEditForm(pkg);
+    }
+
+    function editFormData(pkg: Package): PackageFormData {
+        return {
             munki_name: pkg.munki_name,
             display_name: pkg.display_name,
             category: (packageCategories.includes(pkg.category as PackageCategory) ? pkg.category : 'utilities') as PackageCategory,
@@ -149,7 +157,12 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
             hash: pkg.hash,
             pkg_url: pkg.pkg_url ?? '',
             active: pkg.active,
-        });
+        };
+    }
+
+    function resetEditForm(pkg: Package) {
+        editForm.clearErrors();
+        editForm.setData(editFormData(pkg));
     }
 
     function closeEditModal() {
@@ -413,9 +426,6 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                     <S.ToolbarDescription>{t('packages.description')}</S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
-                    <S.SecondaryButton type="button" onClick={() => setMatrixOpen(true)}>
-                        {t('packages.crossView')}
-                    </S.SecondaryButton>
                     {canExport ? (
                         <S.SecondaryButton as="a" href="/packages/csv">
                             {t('common.exportCsv')}
@@ -555,7 +565,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             />
                         </FormField>
                     </S.Full>
-                    <S.Full>
+                    <S.Full as={S.SwitchBlock}>
                         <S.SwitchLabel>
                             <S.SwitchInput
                                 type="checkbox"
@@ -572,11 +582,14 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         </S.SwitchLabel>
                     </S.Full>
                     {renderUploadProgress(createUploadProgress)}
-                    <S.Full>
+                    <S.ImportActions>
+                        <S.ResetButton type="button" onClick={resetCreateForm}>
+                            {t('common.reset')}
+                        </S.ResetButton>
                         <S.Button type="submit" disabled={form.processing}>
                             {form.processing ? <S.ButtonSpinner aria-label={t('packages.importing')} /> : t('packages.import')}
                         </S.Button>
-                    </S.Full>
+                    </S.ImportActions>
                 </S.Form>
                     </S.Dialog>
                 </S.ModalOverlay>
@@ -760,7 +773,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                     />
                                 </FormField>
                             </S.Full>
-                            <S.Full>
+                            <S.Full as={S.SwitchBlock}>
                                 <S.SwitchLabel>
                                     <S.SwitchInput
                                         type="checkbox"
@@ -778,9 +791,6 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             </S.Full>
                             {renderUploadProgress(editUploadProgress)}
                             <S.ModalActions>
-                                <S.SecondaryButton type="button" onClick={closeEditModal}>
-                                    {t('common.cancel')}
-                                </S.SecondaryButton>
                                 <S.Button type="submit" disabled={editForm.processing}>
                                     {t('common.save')}
                                 </S.Button>
