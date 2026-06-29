@@ -184,6 +184,13 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
         );
     }
 
+    function resetFilters() {
+        setSearch('');
+        setSelectedTargetIds([]);
+        setTargetsOpen(false);
+        setTargetSearch('');
+    }
+
     function openEditModal(share: MobileconfigShare) {
         setShareToEdit(share);
         form.clearErrors();
@@ -446,6 +453,9 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                     ) : null}
                                 </S.FilterDropdown>
                             </S.FilterControl>
+                            <S.DangerButton type="button" onClick={resetFilters} aria-label={t('common.reset')} title={t('common.reset')}>
+                                <span aria-hidden="true">↺</span>
+                            </S.DangerButton>
                         </S.FilterControls>
                     </S.FilterBar>
 

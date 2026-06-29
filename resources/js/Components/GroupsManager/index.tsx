@@ -205,6 +205,13 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         );
     }
 
+    function resetFilters() {
+        setSearch('');
+        setSelectedFilterPersonIds([]);
+        setFilterPeopleOpen(false);
+        setFilterPeopleSearch('');
+    }
+
     function submitEdit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -647,6 +654,9 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                             ) : null}
                         </S.FilterDropdown>
                     </S.FilterControl>
+                    <S.DangerButton type="button" onClick={resetFilters} aria-label={t('common.reset')} title={t('common.reset')}>
+                        <span aria-hidden="true">↺</span>
+                    </S.DangerButton>
                 </S.FilterControls>
             </S.FilterBar>
 

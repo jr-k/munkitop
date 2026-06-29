@@ -400,6 +400,13 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         });
     }
 
+    function resetFilters() {
+        setSearch('');
+        setCategoryFilter('all');
+        setSourceFilter('all');
+        setStatusFilter('all');
+    }
+
     useEffect(() => {
         if (!createOpen && !matrixOpen && !packageToEdit) {
             return;
@@ -1049,6 +1056,9 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             <option value="inactive">{t('packages.inactiveStatus')}</option>
                         </S.FilterSelect>
                     </S.FilterControl>
+                    <S.DangerButton type="button" onClick={resetFilters} aria-label={t('common.reset')} title={t('common.reset')}>
+                        <span aria-hidden="true">↺</span>
+                    </S.DangerButton>
                 </S.FilterControls>
             </S.FilterBar>
 

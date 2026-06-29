@@ -214,6 +214,14 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         );
     }
 
+    function resetFilters() {
+        setSearch('');
+        setActionFilter('all');
+        setSelectedFilterTargetIds([]);
+        setTargetFilterOpen(false);
+        setTargetFilterSearch('');
+    }
+
     const normalizedSearch = search.trim().toLowerCase();
     const filteredAssignments = assignments
         .filter((assignment) => {
@@ -877,6 +885,9 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                             ) : null}
                         </S.FilterDropdown>
                     </S.FilterControl>
+                    <S.DangerButton type="button" onClick={resetFilters} aria-label={t('common.reset')} title={t('common.reset')}>
+                        <span aria-hidden="true">↺</span>
+                    </S.DangerButton>
                 </S.FilterControls>
             </S.FilterBar>
 
