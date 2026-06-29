@@ -450,6 +450,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         <S.Form onSubmit={submit}>
                     <FormField label={t('packages.displayName')} error={form.errors.display_name}>
                         <S.Input
+                            autoFocus
                             value={form.data.display_name}
                             onChange={(event) => {
                                 const displayName = event.target.value;
@@ -602,6 +603,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         <S.Form onSubmit={submitEdit}>
                             <FormField label={t('packages.displayName')} error={editForm.errors.display_name}>
                                 <S.Input
+                                    autoFocus
                                     value={editForm.data.display_name}
                                     onChange={(event) => {
                                         const displayName = event.target.value;

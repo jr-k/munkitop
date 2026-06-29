@@ -37,7 +37,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [personToEdit, setPersonToEdit] = useState<Person | null>(null);
     const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
     const [sort, setSort] = useState<{ key: PeopleSortKey; direction: SortDirection }>({
-        key: 'name',
+        key: 'first_name',
         direction: 'asc',
     });
     const [selectedPersonIds, setSelectedPersonIds] = useState<number[]>([]);
@@ -122,6 +122,14 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
 
     function personLabel(person: Person) {
         return [person.first_name, person.name].filter(Boolean).join(' ');
+    }
+
+    function sortedGroupsForDisplay(groupsToSort: Group[]) {
+        return groupsToSort
+            .filter((group) => group.name.toLowerCase() !== 'default')
+            .sort((firstGroup, secondGroup) =>
+                firstGroup.name.localeCompare(secondGroup.name, undefined, { sensitivity: 'base' }),
+            );
     }
 
     function sortValue(person: Person, key: PeopleSortKey) {
@@ -356,14 +364,15 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                             </S.IconButton>
                         </S.ModalHeader>
                         <S.Form onSubmit={submit}>
-                            <FormField label={t('people.name')} error={form.errors.name}>
-                                <S.Input value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} />
-                            </FormField>
                             <FormField label={t('people.firstName')} error={form.errors.first_name}>
                                 <S.Input
+                                    autoFocus
                                     value={form.data.first_name}
                                     onChange={(event) => form.setData('first_name', event.target.value)}
                                 />
+                            </FormField>
+                            <FormField label={t('people.name')} error={form.errors.name}>
+                                <S.Input value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} />
                             </FormField>
                             <FormField label={t('people.email')} error={form.errors.email}>
                                 <S.Input
@@ -536,13 +545,13 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                 </th>
                             ) : null}
                             <th>
-                                <S.SortButton type="button" onClick={() => changeSort('name')}>
-                                    {t('people.name')}{sortIndicator('name')}
+                                <S.SortButton type="button" onClick={() => changeSort('first_name')}>
+                                    {t('people.firstName')}{sortIndicator('first_name')}
                                 </S.SortButton>
                             </th>
                             <th>
-                                <S.SortButton type="button" onClick={() => changeSort('first_name')}>
-                                    {t('people.firstName')}{sortIndicator('first_name')}
+                                <S.SortButton type="button" onClick={() => changeSort('name')}>
+                                    {t('people.name')}{sortIndicator('name')}
                                 </S.SortButton>
                             </th>
                             <th>
@@ -555,8 +564,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                     {t('people.teams')}{sortIndicator('groups')}
                                 </S.SortButton>
                             </th>
-                            <th>{t('common.manifest')}</th>
-                            <th>{t('common.mobileconfig')}</th>
+                            <S.CenterHeader>{t('common.manifest')}</S.CenterHeader>
+                            <S.CenterHeader>{t('common.mobileconfig')}</S.CenterHeader>
                             {canUpdatePeople ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
@@ -579,20 +588,20 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                         </td>
                                     ) : null}
                                     <td>
-                                        <S.PrimaryCell>{person.name}</S.PrimaryCell>
+                                        <S.PrimaryCell>{person.first_name ?? '-'}</S.PrimaryCell>
                                     </td>
-                                    <td>{person.first_name ?? '-'}</td>
+                                    <td>{person.name}</td>
                                     <td>
                                         <S.CodePill>{person.client_identifier}</S.CodePill>
                                     </td>
                                     <td>
                                         <S.ChipList>
-                                            {person.groups.map((group) => (
+                                            {sortedGroupsForDisplay(person.groups).map((group) => (
                                                 <S.Chip key={group.id}>{group.name}</S.Chip>
                                             ))}
                                         </S.ChipList>
                                     </td>
-                                    <td>
+                                    <S.CenterCell>
                                         <S.TableIconButton
                                             type="button"
                                             aria-label={t('common.manifest')}
@@ -601,8 +610,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                         >
                                             <TableIcon name="manifest" />
                                         </S.TableIconButton>
-                                    </td>
-                                    <td>
+                                    </S.CenterCell>
+                                    <S.CenterCell>
                                         <S.TableIconButton
                                             type="button"
                                             aria-label={t('common.downloadMobileconfig')}
@@ -611,7 +620,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                         >
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
-                                    </td>
+                                    </S.CenterCell>
                                     {canUpdatePeople ? (
                                         <td>
                                             <S.RowActions>
@@ -725,16 +734,17 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                         </S.ModalHeader>
 
                         <S.Form onSubmit={submitEdit}>
+                            <FormField label={t('people.firstName')} error={editForm.errors.first_name}>
+                                <S.Input
+                                    autoFocus
+                                    value={editForm.data.first_name}
+                                    onChange={(event) => editForm.setData('first_name', event.target.value)}
+                                />
+                            </FormField>
                             <FormField label={t('people.name')} error={editForm.errors.name}>
                                 <S.Input
                                     value={editForm.data.name}
                                     onChange={(event) => editForm.setData('name', event.target.value)}
-                                />
-                            </FormField>
-                            <FormField label={t('people.firstName')} error={editForm.errors.first_name}>
-                                <S.Input
-                                    value={editForm.data.first_name}
-                                    onChange={(event) => editForm.setData('first_name', event.target.value)}
                                 />
                             </FormField>
                             <FormField label={t('people.email')} error={editForm.errors.email}>

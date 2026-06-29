@@ -34,6 +34,9 @@ const emptyForm: UserFormData = {
 
 export default function UsersManager({ users, permissionResources, permissionActions }: UsersManagerProps) {
     const { t } = useI18n();
+    const sortedPermissionResources = [...permissionResources].sort((firstResource, secondResource) =>
+        firstResource.localeCompare(secondResource, undefined, { sensitivity: 'base' }),
+    );
     const [createOpen, setCreateOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<ManagedUser | null>(null);
     const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
@@ -235,7 +238,7 @@ export default function UsersManager({ users, permissionResources, permissionAct
                     title={t('users.addTitle')}
                     description={t('users.addDescription')}
                     form={form}
-                    permissionResources={permissionResources}
+                    permissionResources={sortedPermissionResources}
                     permissionActions={permissionActions}
                     onClose={closeCreate}
                     onSubmit={submit}
@@ -249,7 +252,7 @@ export default function UsersManager({ users, permissionResources, permissionAct
                     title={t('users.editTitle')}
                     description={t('users.editDescription')}
                     form={editForm}
-                    permissionResources={permissionResources}
+                    permissionResources={sortedPermissionResources}
                     permissionActions={permissionActions}
                     onClose={closeEdit}
                     onSubmit={submitEdit}
@@ -301,7 +304,7 @@ function UserDialog({
                 <S.DialogDescription>{description}</S.DialogDescription>
                 <S.Form onSubmit={onSubmit}>
                     <FormField label={t('users.name')} error={form.errors.name}>
-                        <S.Input value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} />
+                        <S.Input autoFocus value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} />
                     </FormField>
                     <FormField label={t('users.email')} error={form.errors.email}>
                         <S.Input type="email" value={form.data.email} onChange={(event) => form.setData('email', event.target.value)} />
@@ -401,11 +404,23 @@ function permissionActionLabel(action: PermissionAction): TranslationKey {
 }
 
 function visiblePermissions(permissions: string[]) {
-    return permissions.filter((permission) => {
-        if (!permission.endsWith('.read')) {
-            return true;
-        }
+    return permissions
+        .filter((permission) => {
+            if (!permission.endsWith('.read')) {
+                return true;
+            }
 
-        return !permissions.includes(permission.replace('.read', '.update'));
-    });
+            return !permissions.includes(permission.replace('.read', '.update'));
+        })
+        .sort((firstPermission, secondPermission) => {
+            const [firstScope, firstAction = ''] = firstPermission.split('.', 2);
+            const [secondScope, secondAction = ''] = secondPermission.split('.', 2);
+            const scopeComparison = firstScope.localeCompare(secondScope, undefined, { sensitivity: 'base' });
+
+            if (scopeComparison !== 0) {
+                return scopeComparison;
+            }
+
+            return firstAction.localeCompare(secondAction, undefined, { sensitivity: 'base' });
+        });
 }

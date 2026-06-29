@@ -342,6 +342,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 <FormField label={t('assignments.package')} error={form.errors.package_ids}>
                                     <S.SearchDropdown ref={packageDropdownRef}>
                                         <S.DropdownTrigger
+                                            autoFocus
                                             type="button"
                                             onClick={() => {
                                                 setPackageDropdownOpen((open) => !open);

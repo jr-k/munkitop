@@ -331,6 +331,10 @@ export const CountCell = styled.td`
   text-align: center !important;
 `;
 
+export const CenterCell = styled.td`
+  text-align: center !important;
+`;
+
 export const NotesText = styled.span`
   color: #64748b;
   font-size: 12px;

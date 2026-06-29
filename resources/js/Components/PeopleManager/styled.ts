@@ -328,6 +328,14 @@ export const EmptyCell = styled.td`
   text-align: center !important;
 `;
 
+export const CenterHeader = styled.th`
+  text-align: center !important;
+`;
+
+export const CenterCell = styled.td`
+  text-align: center !important;
+`;
+
 export const Row = styled.div`
   align-items: center;
   border: 1px solid #e2e8f0;
@@ -390,12 +398,13 @@ export const TableIconButton = styled.button<{ $tone?: 'danger' | 'neutral' }>`
 `;
 
 export const ModalOverlay = styled.div`
-  align-items: center;
+  align-items: flex-start;
   backdrop-filter: blur(8px);
   background: rgb(15 23 42 / 55%);
   display: flex;
   inset: 0;
   justify-content: center;
+  overflow: auto;
   padding: 24px;
   position: fixed;
   z-index: 100;
@@ -410,9 +419,10 @@ export const EditDialog = styled.div`
   box-shadow: 0 24px 80px rgb(15 23 42 / 28%);
   display: grid;
   gap: 20px;
+  margin: auto 0;
   max-height: min(760px, calc(100vh - 48px));
   max-width: 720px;
-  overflow: auto;
+  overflow: visible;
   padding: 26px;
   width: min(100%, 720px);
 `;

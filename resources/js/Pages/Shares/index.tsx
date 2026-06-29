@@ -647,7 +647,11 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                 </S.IconButton>
                             </S.ModalHeader>
                             <S.Form onSubmit={submitEdit}>
-                                <S.Select value={form.data.expires_in} onChange={(event) => form.setData('expires_in', event.target.value)}>
+                                <S.Select
+                                    autoFocus
+                                    value={form.data.expires_in}
+                                    onChange={(event) => form.setData('expires_in', event.target.value)}
+                                >
                                     <option value="keep">{t('shares.keepCurrentExpiration')}</option>
                                     <option value="never">{t('mobileconfig.neverExpires')}</option>
                                     <option value="1d">{t('mobileconfig.expiresInOneDay')}</option>

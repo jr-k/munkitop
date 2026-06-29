@@ -370,7 +370,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                         </S.ModalHeader>
                         <S.Form onSubmit={submit}>
                             <FormField label={t('groups.name')} error={form.errors.name}>
-                                <S.Input value={form.data.name} onChange={(event) => updateCreateName(event.target.value)} />
+                                <S.Input autoFocus value={form.data.name} onChange={(event) => updateCreateName(event.target.value)} />
                             </FormField>
                             <FormField label={t('groups.slug')} error={form.errors.slug}>
                                 <S.Input
@@ -461,6 +461,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                         <S.Form onSubmit={submitEdit}>
                             <FormField label={t('groups.name')} error={editForm.errors.name}>
                                 <S.Input
+                                    autoFocus
                                     value={editForm.data.name}
                                     onChange={(event) => updateEditName(event.target.value)}
                                 />
@@ -644,8 +645,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                     {t('groups.notes')}{sortIndicator('notes')}
                                 </S.SortButton>
                             </th>
-                            <th>{t('common.manifest')}</th>
-                            <th>{t('common.mobileconfig')}</th>
+                            <S.CenterHeader>{t('common.manifest')}</S.CenterHeader>
+                            <S.CenterHeader>{t('common.mobileconfig')}</S.CenterHeader>
                             {canUpdateGroups ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
@@ -679,7 +680,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                     <td>
                                         <S.NotesText>{group.notes ?? '-'}</S.NotesText>
                                     </td>
-                                    <td>
+                                    <S.CenterCell>
                                         {group.manifest ? (
                                             <S.TableIconButton
                                                 type="button"
@@ -692,8 +693,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                         ) : (
                                             '-'
                                         )}
-                                    </td>
-                                    <td>
+                                    </S.CenterCell>
+                                    <S.CenterCell>
                                         <S.TableIconButton
                                             type="button"
                                             aria-label={t('common.downloadMobileconfig')}
@@ -702,7 +703,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                         >
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
-                                    </td>
+                                    </S.CenterCell>
                                     {canUpdateGroups ? (
                                         <td>
                                             {group.is_system ? (
