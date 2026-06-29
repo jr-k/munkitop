@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
 import PaginationControls, { usePagination } from '../Pagination';
@@ -26,6 +26,29 @@ type AssignmentFormData = {
 
 type SortDirection = 'asc' | 'desc';
 type AssignmentSortKey = 'package' | 'munki_name' | 'action' | 'target_type' | 'target';
+type MatrixAction = '-' | 'install' | 'uninstall';
+type MatrixTargetRow = {
+    key: string;
+    type: 'group' | 'person';
+    id: number;
+    name: string;
+    identifier: string;
+    groupIds: number[];
+    isDefault: boolean;
+};
+
+function matrixCellKey(type: 'group' | 'person', targetId: number, packageId: number) {
+    return `${type}:${targetId}:${packageId}`;
+}
+
+function isDefaultGroup(group: Group) {
+    return group.slug.toLowerCase() === 'default' || group.name.toLowerCase() === 'default';
+}
+
+function compareByName<T>(label: (item: T) => string) {
+    return (firstItem: T, secondItem: T) =>
+        label(firstItem).localeCompare(label(secondItem), undefined, { sensitivity: 'base' });
+}
 
 export default function AssignmentsManager({ assignments, groups, packages, people }: AssignmentsManagerProps) {
     const { t } = useI18n();
@@ -34,8 +57,8 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
     const [matrixOpen, setMatrixOpen] = useState(false);
-    const [matrixMode, setMatrixMode] = useState<'profiles' | 'packages'>('profiles');
     const [matrixSearch, setMatrixSearch] = useState('');
+    const [savingMatrixCell, setSavingMatrixCell] = useState<string | null>(null);
     const [packageDropdownOpen, setPackageDropdownOpen] = useState(false);
     const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
     const [packageSearch, setPackageSearch] = useState('');
@@ -119,74 +142,65 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const filteredTargets = targetOptions.filter((target) =>
         [target.eyebrow, target.label].join(' ').toLowerCase().includes(targetSearch.trim().toLowerCase()),
     );
-    const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
-    const packageMatrixRows = packages
-        .map((pkg) => ({
-            package: pkg,
-            profiles: assignments.filter((assignment) => assignment.package.id === pkg.id),
-        }))
-        .filter((row) => {
+    const assignmentByMatrixCell = useMemo(() => {
+        return assignments.reduce<Record<string, Assignment>>((lookup, assignment) => {
+            if (assignment.package.id === null || assignment.target.id === null) {
+                return lookup;
+            }
+
+            lookup[matrixCellKey(assignment.target.type, assignment.target.id, assignment.package.id)] = assignment;
+
+            return lookup;
+        }, {});
+    }, [assignments]);
+    const matrixRows = useMemo(() => {
+        const defaultGroup = groups.find((group) => isDefaultGroup(group));
+        const optionalGroups = groups
+            .filter((group) => !isDefaultGroup(group))
+            .sort(compareByName((group) => group.name));
+        const peopleRows = people
+            .map<MatrixTargetRow>((person) => ({
+                key: `person:${person.id}`,
+                type: 'person',
+                id: person.id,
+                name: personLabel(person),
+                identifier: person.client_identifier,
+                groupIds: person.groups.map((group) => group.id),
+                isDefault: false,
+            }))
+            .sort(compareByName((person) => person.name));
+        const groupRows = [
+            ...(defaultGroup ? [defaultGroup] : []),
+            ...optionalGroups,
+        ].map<MatrixTargetRow>((group) => ({
+            key: `group:${group.id}`,
+            type: 'group',
+            id: group.id,
+            name: group.name,
+            identifier: group.slug,
+            groupIds: [],
+            isDefault: isDefaultGroup(group),
+        }));
+
+        return [...groupRows, ...peopleRows];
+    }, [groups, people]);
+    const filteredMatrixRows = useMemo(() => {
+        const normalizedSearch = matrixSearch.trim().toLowerCase();
+
+        if (!normalizedSearch) {
+            return matrixRows;
+        }
+
+        return matrixRows.filter((row) => {
             const searchable = [
-                row.package.display_name,
-                row.package.munki_name,
-                ...row.profiles.flatMap((assignment) => [
-                    assignment.target.name ?? '',
-                    assignment.target.identifier ?? '',
-                    assignment.target.type,
-                    assignment.action,
-                ]),
-            ]
-                .join(' ')
-                .toLowerCase();
+                row.name,
+                row.identifier,
+                row.type === 'group' ? t('common.group') : t('common.person'),
+            ].join(' ').toLowerCase();
 
-            return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
+            return searchable.includes(normalizedSearch);
         });
-    const profileMatrixRows = Object.values(
-        assignments.reduce<
-            Record<
-                string,
-                {
-                    target: Assignment['target'];
-                    assignments: Assignment[];
-                }
-            >
-        >((rows, assignment) => {
-            const key = `${assignment.target.type}:${assignment.target.id}`;
-
-            rows[key] ??= {
-                target: assignment.target,
-                assignments: [],
-            };
-            rows[key].assignments.push(assignment);
-
-            return rows;
-        }, {}),
-    ).filter((row) => {
-        const searchable = [
-            row.target.name ?? '',
-            row.target.identifier ?? '',
-            row.target.type,
-            ...row.assignments.flatMap((assignment) => [
-                assignment.package.name ?? '',
-                assignment.package.munki_name ?? '',
-                assignment.action,
-            ]),
-        ]
-            .join(' ')
-            .toLowerCase();
-
-        return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
-    });
-    const profileMatrixPagination = usePagination(profileMatrixRows, {
-        key: 'assignment_matrix_profiles',
-        syncUrl: matrixOpen && matrixMode === 'profiles',
-    });
-    const paginatedProfileMatrixRows = profileMatrixPagination.items;
-    const packageMatrixPagination = usePagination(packageMatrixRows, {
-        key: 'assignment_matrix_packages',
-        syncUrl: matrixOpen && matrixMode === 'packages',
-    });
-    const paginatedPackageMatrixRows = packageMatrixPagination.items;
+    }, [matrixRows, matrixSearch, t]);
 
     function togglePackage(packageId: string) {
         form.setData(
@@ -220,6 +234,78 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         setSelectedFilterTargetIds([]);
         setTargetFilterOpen(false);
         setTargetFilterSearch('');
+    }
+
+    function inheritedInstallSource(row: MatrixTargetRow, pkg: Package) {
+        const defaultRow = matrixRows.find((matrixRow) => matrixRow.isDefault);
+        const defaultAssignment = defaultRow
+            ? assignmentByMatrixCell[matrixCellKey('group', defaultRow.id, pkg.id)]
+            : null;
+
+        if (defaultRow && row.key !== defaultRow.key && defaultAssignment?.action === 'install') {
+            return defaultRow.name;
+        }
+
+        if (row.type !== 'person') {
+            return null;
+        }
+
+        const inheritedGroup = matrixRows.find((matrixRow) => {
+            if (matrixRow.type !== 'group' || matrixRow.isDefault || !row.groupIds.includes(matrixRow.id)) {
+                return false;
+            }
+
+            return assignmentByMatrixCell[matrixCellKey('group', matrixRow.id, pkg.id)]?.action === 'install';
+        });
+
+        return inheritedGroup?.name ?? null;
+    }
+
+    function matrixCellState(row: MatrixTargetRow, pkg: Package) {
+        const cellKey = matrixCellKey(row.type, row.id, pkg.id);
+        const directAssignment = assignmentByMatrixCell[cellKey] ?? null;
+        const inheritedSource = directAssignment ? null : inheritedInstallSource(row, pkg);
+
+        return {
+            cellKey,
+            directAssignment,
+            inheritedSource,
+            action: (directAssignment?.action ?? '-') as MatrixAction,
+            disabled: inheritedSource !== null || savingMatrixCell === cellKey || !canUpdateAssignments,
+            saving: savingMatrixCell === cellKey,
+        };
+    }
+
+    function updateMatrixCell(row: MatrixTargetRow, pkg: Package, nextAction: MatrixAction) {
+        const cell = matrixCellState(row, pkg);
+
+        if (cell.disabled || cell.action === nextAction) {
+            return;
+        }
+
+        setSavingMatrixCell(cell.cellKey);
+
+        if (nextAction === '-') {
+            if (!cell.directAssignment) {
+                setSavingMatrixCell(null);
+                return;
+            }
+
+            router.delete(`/assignments/${cell.directAssignment.id}`, {
+                preserveScroll: true,
+                onFinish: () => setSavingMatrixCell(null),
+            });
+            return;
+        }
+
+        router.post('/assignments', {
+            package_ids: [String(pkg.id)],
+            targets: [row.key],
+            action: nextAction,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setSavingMatrixCell(null),
+        });
     }
 
     const normalizedSearch = search.trim().toLowerCase();
@@ -397,14 +483,14 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                     <S.ToolbarDescription>{t('assignments.description')}</S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
-                    <S.SecondaryButton type="button" onClick={() => setMatrixOpen(true)}>
-                        {t('packages.crossView')}
-                    </S.SecondaryButton>
                     {canExport ? (
                         <S.SecondaryButton as="a" href="/assignments/csv">
                             {t('common.exportCsv')}
                         </S.SecondaryButton>
                     ) : null}
+                    <S.MatrixButton type="button" onClick={() => setMatrixOpen(true)}>
+                        {t('assignments.matrix')}
+                    </S.MatrixButton>
                     {canUpdateAssignments ? (
                         <S.Button type="button" onClick={() => setCreateOpen(true)}>
                             {t('common.add')}
@@ -599,19 +685,19 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
             ) : null}
 
             {matrixOpen ? (
-                <S.ModalOverlay
+                <S.FullscreenOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
                             setMatrixOpen(false);
                         }
                     }}
                 >
-                    <S.WideDialog onClick={(event) => event.stopPropagation()}>
+                    <S.FullscreenDialog onClick={(event) => event.stopPropagation()}>
                         <S.ModalHeader>
                             <div>
-                                <S.ModalTitle>{t('packages.matrixTitle')}</S.ModalTitle>
+                                <S.ModalTitle>{t('assignments.matrixTitle')}</S.ModalTitle>
                                 <S.ModalDescription>
-                                    {t('packages.matrixDescription')}
+                                    {t('assignments.matrixDescription')}
                                 </S.ModalDescription>
                             </div>
                             <S.IconButton type="button" onClick={() => setMatrixOpen(false)} aria-label={t('common.close')}>
@@ -620,184 +706,120 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                         </S.ModalHeader>
 
                         <S.MatrixControls>
-                            <S.SegmentedControl>
-                                <S.SegmentButton
-                                    type="button"
-                                    $active={matrixMode === 'profiles'}
-                                    onClick={() => setMatrixMode('profiles')}
-                                >
-                                    {t('packages.byProfile')}
-                                </S.SegmentButton>
-                                <S.SegmentButton
-                                    type="button"
-                                    $active={matrixMode === 'packages'}
-                                    onClick={() => setMatrixMode('packages')}
-                                >
-                                    {t('packages.byPackage')}
-                                </S.SegmentButton>
-                            </S.SegmentedControl>
                             <S.FilterInput
                                 value={matrixSearch}
                                 onChange={(event) => setMatrixSearch(event.target.value)}
-                                placeholder={t('packages.matrixSearch')}
+                                placeholder={t('assignments.matrixSearch')}
                             />
                         </S.MatrixControls>
 
-                        {matrixMode === 'profiles' ? (
-                            <PaginationControls
-                                page={profileMatrixPagination.page}
-                                pageCount={profileMatrixPagination.pageCount}
-                                pageSize={profileMatrixPagination.pageSize}
-                                total={profileMatrixPagination.total}
-                                from={profileMatrixPagination.from}
-                                to={profileMatrixPagination.to}
-                                onPageChange={profileMatrixPagination.setPage}
-                                onPageSizeChange={profileMatrixPagination.setPageSize}
-                            />
-                        ) : (
-                            <PaginationControls
-                                page={packageMatrixPagination.page}
-                                pageCount={packageMatrixPagination.pageCount}
-                                pageSize={packageMatrixPagination.pageSize}
-                                total={packageMatrixPagination.total}
-                                from={packageMatrixPagination.from}
-                                to={packageMatrixPagination.to}
-                                onPageChange={packageMatrixPagination.setPage}
-                                onPageSizeChange={packageMatrixPagination.setPageSize}
-                            />
-                        )}
-                        <S.TableCard>
+                        <S.MatrixScroll>
                             <S.MatrixTable>
-                                {matrixMode === 'profiles' ? (
-                                    <>
-                                        <thead>
-                                            <tr>
-                                                <th>{t('packages.profile')}</th>
-                                                <th>{t('packages.type')}</th>
-                                                <th>{t('packages.identifier')}</th>
-                                                <th>{t('common.packages')}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {profileMatrixRows.length === 0 ? (
-                                                <tr>
-                                                    <S.EmptyCell colSpan={4}>{t('packages.noProfileAssigned')}</S.EmptyCell>
-                                                </tr>
-                                            ) : (
-                                                paginatedProfileMatrixRows.map((row) => (
-                                                    <tr key={`${row.target.type}:${row.target.id}`}>
-                                                        <td>
-                                                            <S.TargetTitle>
-                                                                <TargetIcon type={row.target.type} />
-                                                                <S.PrimaryCell>{row.target.name}</S.PrimaryCell>
-                                                            </S.TargetTitle>
-                                                        </td>
-                                                        <td>{row.target.type === 'group' ? t('common.group') : t('common.person')}</td>
-                                                        <td>{row.target.identifier ? <S.CodePill>{row.target.identifier}</S.CodePill> : '-'}</td>
-                                                        <td>
-                                                            <S.AssignmentPills>
-                                                                {row.assignments.map((assignment) => (
-                                                                    <S.AssignmentPill
-                                                                        key={`${assignment.package.id}:${assignment.action}`}
-                                                                        $action={assignment.action}
-                                                                    >
-                                                                        <S.InlinePackage>
-                                                                            {assignment.action === 'uninstall' ? '-' : null}
-                                                                            <PackageIcon
-                                                                                iconUrl={assignment.package.icon_url}
-                                                                                name={assignment.package.name ?? ''}
-                                                                                size="sm"
-                                                                            />
-                                                                            {assignment.package.name}
-                                                                        </S.InlinePackage>
-                                                                    </S.AssignmentPill>
-                                                                ))}
-                                                            </S.AssignmentPills>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </>
-                                ) : (
-                                    <>
-                                        <thead>
-                                            <tr>
-                                                <th>{t('assignments.package')}</th>
-                                                <th>{t('packages.munkiName')}</th>
-                                                <th>{t('packages.profile')}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {packageMatrixRows.length === 0 ? (
-                                                <tr>
-                                                    <S.EmptyCell colSpan={3}>{t('packages.noMatrixPackage')}</S.EmptyCell>
-                                                </tr>
-                                            ) : (
-                                                paginatedPackageMatrixRows.map((row) => (
-                                                    <tr key={row.package.id}>
-                                                        <td>
-                                                            <S.PackageTitle>
-                                                                <PackageIcon iconUrl={row.package.icon_url} name={row.package.display_name} />
-                                                                <S.PrimaryCell>{row.package.display_name}</S.PrimaryCell>
-                                                            </S.PackageTitle>
-                                                        </td>
-                                                        <td>
-                                                            <S.CodePill>{row.package.munki_name}</S.CodePill>
-                                                        </td>
-                                                        <td>
-                                                            {row.profiles.length === 0 ? (
-                                                                <S.Meta>{t('packages.noProfile')}</S.Meta>
+                                <thead>
+                                    <tr>
+                                        <S.MatrixCornerHeader>{t('assignments.matrixTarget')}</S.MatrixCornerHeader>
+                                        {packages.map((pkg) => (
+                                            <S.MatrixPackageHeader key={pkg.id}>
+                                                <S.MatrixPackageTitle>
+                                                    <PackageIcon iconUrl={pkg.icon_url} name={pkg.display_name} size="sm" />
+                                                    <span>{pkg.display_name}</span>
+                                                </S.MatrixPackageTitle>
+                                                <S.MatrixPackageMunkiName>{pkg.munki_name}</S.MatrixPackageMunkiName>
+                                            </S.MatrixPackageHeader>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredMatrixRows.length === 0 ? (
+                                        <tr>
+                                            <S.EmptyCell colSpan={packages.length + 1}>{t('assignments.matrixNoTarget')}</S.EmptyCell>
+                                        </tr>
+                                    ) : (
+                                        filteredMatrixRows.map((row) => (
+                                            <tr key={row.key}>
+                                                <S.MatrixRowHeader>
+                                                    <S.TargetTitle>
+                                                        <TargetIcon type={row.type} />
+                                                        <span>
+                                                            <S.PrimaryCell>{row.name}</S.PrimaryCell>
+                                                            <S.MatrixRowMeta>
+                                                                {row.type === 'group' ? t('common.group') : t('common.person')}
+                                                                {row.identifier ? ` · ${row.identifier}` : ''}
+                                                            </S.MatrixRowMeta>
+                                                        </span>
+                                                    </S.TargetTitle>
+                                                </S.MatrixRowHeader>
+                                                {packages.map((pkg) => {
+                                                    const cell = matrixCellState(row, pkg);
+                                                    const actionLabel = cell.action === '-'
+                                                        ? '-'
+                                                        : (cell.action === 'install' ? t('assignments.install') : t('assignments.uninstall'));
+                                                    const cellTitle = cell.inheritedSource
+                                                        ? t('assignments.matrixInheritedFrom', { target: cell.inheritedSource })
+                                                        : t('assignments.matrixCellTitle', {
+                                                            target: row.name,
+                                                            package: pkg.display_name,
+                                                            action: actionLabel,
+                                                        });
+
+                                                    return (
+                                                        <S.MatrixCell
+                                                            key={pkg.id}
+                                                            $action={cell.inheritedSource ? 'inherited' : cell.action}
+                                                            $disabled={cell.disabled}
+                                                        >
+                                                            {cell.saving || cell.inheritedSource ? (
+                                                                <S.MatrixCellStatus title={cellTitle}>
+                                                                    <span>{cell.saving ? '…' : t('assignments.matrixInheritedShort')}</span>
+                                                                    {cell.inheritedSource ? (
+                                                                        <S.MatrixInheritedLabel>
+                                                                            {t('assignments.matrixInheritedFrom', { target: cell.inheritedSource })}
+                                                                        </S.MatrixInheritedLabel>
+                                                                    ) : null}
+                                                                </S.MatrixCellStatus>
                                                             ) : (
-                                                                <S.AssignmentPills>
-                                                                    {row.profiles.map((assignment) => (
-                                                                        <S.AssignmentPill
-                                                                            key={assignment.id}
-                                                                            $action={assignment.action}
-                                                                        >
-                                                                            {assignment.action === 'uninstall' ? '-' : null}
-                                                                            <S.InlineTarget>
-                                                                                <TargetIcon type={assignment.target.type} />
-                                                                                {assignment.target.name}
-                                                                            </S.InlineTarget>
-                                                                        </S.AssignmentPill>
-                                                                    ))}
-                                                                </S.AssignmentPills>
+                                                                <S.MatrixCellActions>
+                                                                    {(['-', 'install', 'uninstall'] as const).map((nextAction) => {
+                                                                        const nextActionLabel = nextAction === '-'
+                                                                            ? '-'
+                                                                            : (nextAction === 'install' ? t('assignments.install') : t('assignments.uninstall'));
+
+                                                                        return (
+                                                                            <S.MatrixCellActionButton
+                                                                                key={nextAction}
+                                                                                type="button"
+                                                                                $active={cell.action === nextAction}
+                                                                                $action={nextAction}
+                                                                                disabled={cell.disabled}
+                                                                                aria-label={t('assignments.matrixCellTitle', {
+                                                                                    target: row.name,
+                                                                                    package: pkg.display_name,
+                                                                                    action: nextActionLabel,
+                                                                                })}
+                                                                                title={t('assignments.matrixCellTitle', {
+                                                                                    target: row.name,
+                                                                                    package: pkg.display_name,
+                                                                                    action: nextActionLabel,
+                                                                                })}
+                                                                                onClick={() => updateMatrixCell(row, pkg, nextAction)}
+                                                                            >
+                                                                                {nextActionLabel}
+                                                                            </S.MatrixCellActionButton>
+                                                                        );
+                                                                    })}
+                                                                </S.MatrixCellActions>
                                                             )}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </>
-                                )}
+                                                        </S.MatrixCell>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
                             </S.MatrixTable>
-                        </S.TableCard>
-                        {matrixMode === 'profiles' ? (
-                            <PaginationControls
-                                page={profileMatrixPagination.page}
-                                pageCount={profileMatrixPagination.pageCount}
-                                pageSize={profileMatrixPagination.pageSize}
-                                total={profileMatrixPagination.total}
-                                from={profileMatrixPagination.from}
-                                to={profileMatrixPagination.to}
-                                onPageChange={profileMatrixPagination.setPage}
-                                onPageSizeChange={profileMatrixPagination.setPageSize}
-                            />
-                        ) : (
-                            <PaginationControls
-                                page={packageMatrixPagination.page}
-                                pageCount={packageMatrixPagination.pageCount}
-                                pageSize={packageMatrixPagination.pageSize}
-                                total={packageMatrixPagination.total}
-                                from={packageMatrixPagination.from}
-                                to={packageMatrixPagination.to}
-                                onPageChange={packageMatrixPagination.setPage}
-                                onPageSizeChange={packageMatrixPagination.setPageSize}
-                            />
-                        )}
-                    </S.WideDialog>
-                </S.ModalOverlay>
+                        </S.MatrixScroll>
+                    </S.FullscreenDialog>
+                </S.FullscreenOverlay>
             ) : null}
 
             <S.FilterBar>

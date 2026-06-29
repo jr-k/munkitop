@@ -340,6 +340,11 @@ export const SecondaryButton = styled.button`
   text-decoration: none;
 `;
 
+export const MatrixButton = styled(SecondaryButton)`
+  background: #f3e8ff;
+  color: #6b21a8;
+`;
+
 export const ResetButton = styled(SecondaryButton)`
   margin-right: auto;
 `;
@@ -500,6 +505,20 @@ export const WideDialog = styled(Dialog)`
   width: min(100%, 1080px);
 `;
 
+export const FullscreenOverlay = styled(ModalOverlay)`
+  align-items: stretch;
+  padding: 16px;
+`;
+
+export const FullscreenDialog = styled(Dialog)`
+  gap: 16px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: calc(100vh - 32px);
+  max-width: none;
+  overflow: hidden;
+  width: 100%;
+`;
+
 export const ModalHeader = styled.div`
   align-items: flex-start;
   display: flex;
@@ -559,39 +578,204 @@ export const MatrixControls = styled.div`
   }
 `;
 
-export const SegmentedControl = styled.div`
-  background: #f1f5f9;
-  border-radius: 14px;
-  display: flex;
-  gap: 4px;
-  padding: 4px;
+export const MatrixScroll = styled.div`
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 `;
 
-export const SegmentButton = styled.button<{ $active: boolean }>`
-  background: ${({ $active }) => ($active ? '#ffffff' : 'transparent')};
-  border: 0;
-  border-radius: 10px;
-  box-shadow: ${({ $active }) => ($active ? '0 6px 16px rgb(15 23 42 / 10%)' : 'none')};
-  color: ${({ $active }) => ($active ? '#1d4ed8' : '#475569')};
-  font-weight: 800;
-  padding: 9px 12px;
+export const MatrixTable = styled.table`
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: max-content;
+  width: 100%;
+
+  th,
+  td {
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+    padding: 0;
+    vertical-align: middle;
+  }
+
+  thead th {
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
 `;
 
-export const MatrixTable = styled(Table)`
-  min-width: 820px;
-`;
-
-export const AssignmentPills = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-`;
-
-export const AssignmentPill = styled.span<{ $action: 'install' | 'uninstall' }>`
-  background: ${({ $action }) => ($action === 'install' ? '#f1f5f9' : '#fee2e2')};
-  border-radius: 999px;
-  color: ${({ $action }) => ($action === 'install' ? '#334155' : '#991b1b')};
+export const MatrixCornerHeader = styled.th`
+  color: #475569;
   font-size: 12px;
+  font-weight: 900;
+  left: 0;
+  letter-spacing: 0.04em;
+  min-width: 260px;
+  padding: 14px !important;
+  text-align: left;
+  text-transform: uppercase;
+  z-index: 5 !important;
+`;
+
+export const MatrixPackageHeader = styled.th`
+  color: #0f172a;
+  min-width: 180px;
+  padding: 12px !important;
+  text-align: left;
+  width: 180px;
+`;
+
+export const MatrixPackageTitle = styled.span`
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  line-height: 1.2;
+`;
+
+export const MatrixPackageMunkiName = styled.code`
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  margin-top: 6px;
+`;
+
+export const MatrixRowHeader = styled.th`
+  background: #ffffff;
+  left: 0;
+  min-width: 260px;
+  padding: 12px 14px !important;
+  position: sticky;
+  text-align: left;
+  z-index: 2;
+`;
+
+export const MatrixRowMeta = styled.span`
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 3px;
+`;
+
+export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | 'inherited'; $disabled: boolean }>`
+  background: ${({ $action }) => {
+    if ($action === 'install') {
+      return '#f0fdf4';
+    }
+
+    if ($action === 'uninstall') {
+      return '#fef2f2';
+    }
+
+    if ($action === 'inherited') {
+      return '#f8fafc';
+    }
+
+    return '#ffffff';
+  }};
+  color: ${({ $action }) => {
+    if ($action === 'install') {
+      return '#166534';
+    }
+
+    if ($action === 'uninstall') {
+      return '#991b1b';
+    }
+
+    return '#475569';
+  }};
+  opacity: ${({ $disabled }) => ($disabled ? 0.82 : 1)};
+`;
+
+export const MatrixCellStatus = styled.div`
+  align-items: center;
+  color: inherit;
+  display: grid;
+  font-weight: 900;
+  gap: 3px;
+  min-height: 58px;
+  padding: 8px;
+  place-items: center;
+  width: 100%;
+`;
+
+export const MatrixCellActions = styled.div`
+  align-items: stretch;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 34px 1fr 1fr;
+  min-height: 58px;
+  padding: 6px;
+`;
+
+export const MatrixCellActionButton = styled.button<{ $active: boolean; $action: '-' | 'install' | 'uninstall' }>`
+  background: ${({ $active, $action }) => {
+    if (!$active) {
+      return '#ffffff';
+    }
+
+    if ($action === 'install') {
+      return '#dcfce7';
+    }
+
+    if ($action === 'uninstall') {
+      return '#fee2e2';
+    }
+
+    return '#e2e8f0';
+  }};
+  border: 1px solid ${({ $active, $action }) => {
+    if (!$active) {
+      return '#e2e8f0';
+    }
+
+    if ($action === 'install') {
+      return '#86efac';
+    }
+
+    if ($action === 'uninstall') {
+      return '#fecaca';
+    }
+
+    return '#cbd5e1';
+  }};
+  border-radius: 9px;
+  color: ${({ $active, $action }) => {
+    if (!$active) {
+      return '#475569';
+    }
+
+    if ($action === 'install') {
+      return '#166534';
+    }
+
+    if ($action === 'uninstall') {
+      return '#991b1b';
+    }
+
+    return '#334155';
+  }};
+  font-size: 11px;
+  font-weight: 900;
+  padding: 0 6px;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: #94a3b8;
+  }
+`;
+
+export const MatrixInheritedLabel = styled.span`
+  color: #64748b;
+  font-size: 10px;
   font-weight: 800;
-  padding: 5px 9px;
+  line-height: 1.1;
 `;
