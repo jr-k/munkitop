@@ -691,7 +691,11 @@ export const MatrixRowMeta = styled.span`
 `;
 
 export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | 'inherited'; $disabled: boolean; $inherited: boolean }>`
-  background: ${({ $action }) => {
+  background: ${({ $action, $inherited }) => {
+    if ($inherited) {
+      return '#f8fafc';
+    }
+
     if ($action === 'install') {
       return '#f0fdf4';
     }
@@ -717,7 +721,7 @@ export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | '
 
     return '#475569';
   }};
-  box-shadow: ${({ $inherited }) => ($inherited ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.5)' : 'none')};
+  box-shadow: none;
   min-width: 180px;
   opacity: ${({ $disabled }) => ($disabled ? 0.82 : 1)};
   width: 180px;
@@ -744,8 +748,12 @@ export const MatrixCellStatus = styled.div`
   width: 100%;
 `;
 
-export const MatrixCellSelect = styled.select<{ $action: '-' | 'install' | 'uninstall' }>`
-  background: ${({ $action }) => {
+export const MatrixCellSelect = styled.select<{ $action: '-' | 'install' | 'uninstall'; $inherited: boolean }>`
+  background: ${({ $action, $inherited }) => {
+    if ($inherited) {
+      return '#f1f5f9';
+    }
+
     if ($action === 'install') {
       return '#dcfce7';
     }
@@ -756,7 +764,11 @@ export const MatrixCellSelect = styled.select<{ $action: '-' | 'install' | 'unin
 
     return '#e2e8f0';
   }};
-  border: 1px solid ${({ $action }) => {
+  border: 1px solid ${({ $action, $inherited }) => {
+    if ($inherited) {
+      return '#94a3b8';
+    }
+
     if ($action === 'install') {
       return '#86efac';
     }
@@ -799,13 +811,12 @@ export const MatrixCellSelect = styled.select<{ $action: '-' | 'install' | 'unin
 `;
 
 export const MatrixInheritedLabel = styled.span`
-  background: rgb(0 0 0 / 70%);
-  color: #fff;
+  color: #475569;
   display: block;
   font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
-  padding: 5px 6px;
+  padding: 0 6px 6px;
   text-align: center;
   width: 100%;
 `;

@@ -865,6 +865,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                                                     <S.MatrixCellSelect
                                                                         value={effectiveAction}
                                                                         $action={effectiveAction}
+                                                                        $inherited={cell.inherited !== null}
                                                                         disabled={cell.disabled}
                                                                         aria-label={cellTitle}
                                                                         title={cellTitle}
