@@ -40,14 +40,14 @@ export default function ExportPanel({ munki }: ExportPanelProps) {
                     <S.Meta>
                         {t('munki.repoMeta', {
                             repoPath: munki.repoPath,
-                            repoUrl: munki.repoUrl,
+                            repoUrl: effectiveRepoUrl,
                             catalog: munki.catalog,
                             baseManifest: munki.baseManifest,
                         })}
                     </S.Meta>
                 </S.Content>
                 <S.HeroActions>
-                    <S.RepoLink href={munki.repoUrl} target="_blank" rel="noreferrer">
+                    <S.RepoLink href={effectiveRepoUrl} target="_blank" rel="noreferrer">
                         {t('munki.openRepo')}
                     </S.RepoLink>
                     <S.Button type="button" onClick={() => router.post('/munki/export')}>

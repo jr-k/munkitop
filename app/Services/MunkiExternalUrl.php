@@ -96,6 +96,25 @@ class MunkiExternalUrl
 
     private function normalize(string $url): string
     {
-        return rtrim($url, '/');
+        $url = rtrim($url, '/');
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+        $port = parse_url($url, PHP_URL_PORT);
+
+        if (! is_string($scheme) || ! is_string($host) || $port === null || ! $this->isDefaultPort($scheme, (string) $port)) {
+            return $url;
+        }
+
+        $user = parse_url($url, PHP_URL_USER);
+        $pass = parse_url($url, PHP_URL_PASS);
+        $path = parse_url($url, PHP_URL_PATH);
+        $query = parse_url($url, PHP_URL_QUERY);
+        $fragment = parse_url($url, PHP_URL_FRAGMENT);
+        $auth = is_string($user) ? $user.(is_string($pass) ? ':'.$pass : '').'@' : '';
+
+        return $scheme.'://'.$auth.$host
+            .(is_string($path) ? $path : '')
+            .(is_string($query) ? '?'.$query : '')
+            .(is_string($fragment) ? '#'.$fragment : '');
     }
 }
