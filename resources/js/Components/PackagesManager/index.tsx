@@ -64,7 +64,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         bundle_identifier: '',
         version: '',
         icon: null,
-        pkg_source: 'url',
+        pkg_source: 'upload',
         pkg_file: null,
         hash: '',
         pkg_url: '',
@@ -83,13 +83,25 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         active: true,
     });
 
+    function openCreateModal() {
+        form.clearErrors();
+        form.reset();
+        setCreateOpen(true);
+    }
+
+    function closeCreateModal() {
+        setCreateOpen(false);
+        form.clearErrors();
+        form.reset();
+    }
+
     function submit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         form.post('/packages', {
             forceFormData: true,
             onSuccess: () => {
                 form.reset();
-                setCreateOpen(false);
+                closeCreateModal();
             },
         });
     }
@@ -354,7 +366,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         </S.SecondaryButton>
                     ) : null}
                     {canUpdatePackages ? (
-                        <S.Button type="button" onClick={() => setCreateOpen(true)}>
+                        <S.Button type="button" onClick={openCreateModal}>
                             {t('common.add')}
                         </S.Button>
                     ) : null}
@@ -365,7 +377,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
-                            setCreateOpen(false);
+                            closeCreateModal();
                         }
                     }}
                 >
@@ -375,7 +387,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                 <S.ModalTitle>{t('packages.addTitle')}</S.ModalTitle>
                                 <S.ModalDescription>{t('packages.addDescription')}</S.ModalDescription>
                             </div>
-                            <S.IconButton type="button" onClick={() => setCreateOpen(false)} aria-label={t('common.close')}>
+                            <S.IconButton type="button" onClick={closeCreateModal} aria-label={t('common.close')}>
                                 ×
                             </S.IconButton>
                         </S.ModalHeader>
