@@ -13,7 +13,7 @@ type PeoplePageProps = PageProps & {
 export default function People({ people, groups }: PeoplePageProps) {
     const { props } = usePage<PeoplePageProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     return (
         <>

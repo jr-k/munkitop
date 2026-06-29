@@ -166,6 +166,18 @@
             padding-left: 48px;
         }
 
+        .discreet-action {
+            color: #64748b;
+            font-size: 12px;
+            padding-left: 48px;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .discreet-action:hover {
+            color: #475569;
+        }
+
         .button {
             align-items: center;
             background: #2563eb;
@@ -224,6 +236,7 @@
             }
 
             .actions,
+            .discreet-action,
             .hint {
                 margin-left: 0;
                 padding-left: 0;
@@ -292,6 +305,9 @@
                         Après l’ouverture du fichier, va dans Réglages Système. Sous le compte Apple, clique sur
                         <strong>Profil téléchargé</strong>, puis vérifie et installe le profil.
                     </p>
+                    <a class="discreet-action" href="{{ $checkIntervalScriptUrl }}" download data-i18n="checkIntervalScript">
+                        Télécharger le script pour changer la fréquence de vérification Munki.
+                    </a>
                 </article>
             </div>
 
@@ -314,6 +330,7 @@
                 configButton: 'Télécharger {file}',
                 hint: 'Après l’ouverture du fichier, va dans Réglages Système. Sous le compte Apple, clique sur <strong>Profil téléchargé</strong>, puis vérifie et installe le profil.',
                 footer: 'Tu peux fermer cette page une fois les deux étapes terminées.',
+                checkIntervalScript: 'Télécharger le script pour changer la fréquence de vérification Munki.',
             },
             en: {
                 documentTitle: 'Install Munki',
@@ -328,6 +345,7 @@
                 configButton: 'Download {file}',
                 hint: 'After opening the file, go to System Settings. Under your Apple Account, click <strong>Downloaded Profile</strong>, then review and install the profile.',
                 footer: 'You can close this page once both steps are complete.',
+                checkIntervalScript: 'Download the script to change the Munki check interval.',
             },
         };
 

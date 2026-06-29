@@ -22,7 +22,7 @@ type MunkiPageProps = PageProps & {
 export default function Munki({ munki }: MunkiPageProps) {
     const { props } = usePage<MunkiPageProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     return (
         <>

@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
@@ -6,7 +6,8 @@ import PackageIcon from '../PackageIcon';
 import TableIcon from '../TableIcon';
 import TargetIcon from '../TargetIcon';
 import { useI18n } from '../../i18n';
-import { Package } from '../../types';
+import { can } from '../../permissions';
+import { Package, PageProps } from '../../types';
 import * as S from './styled';
 
 type PackagesManagerProps = {
@@ -39,6 +40,9 @@ type PackageSortKey =
 
 export default function PackagesManager({ packages }: PackagesManagerProps) {
     const { t } = useI18n();
+    const { props } = usePage<PageProps>();
+    const canUpdatePackages = can(props, 'packages', 'update');
+    const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
     const [matrixOpen, setMatrixOpen] = useState(false);
     const [matrixMode, setMatrixMode] = useState<'profiles' | 'packages'>('profiles');
@@ -344,16 +348,20 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                     <S.SecondaryButton type="button" onClick={() => setMatrixOpen(true)}>
                         {t('packages.crossView')}
                     </S.SecondaryButton>
-                    <S.SecondaryButton as="a" href="/packages/csv">
-                        {t('common.exportCsv')}
-                    </S.SecondaryButton>
-                    <S.Button type="button" onClick={() => setCreateOpen(true)}>
-                        {t('common.add')}
-                    </S.Button>
+                    {canExport ? (
+                        <S.SecondaryButton as="a" href="/packages/csv">
+                            {t('common.exportCsv')}
+                        </S.SecondaryButton>
+                    ) : null}
+                    {canUpdatePackages ? (
+                        <S.Button type="button" onClick={() => setCreateOpen(true)}>
+                            {t('common.add')}
+                        </S.Button>
+                    ) : null}
                 </S.ToolbarActions>
             </S.Toolbar>
 
-            {createOpen ? (
+            {canUpdatePackages && createOpen ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -493,7 +501,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                 </S.ModalOverlay>
             ) : null}
 
-            {packageToEdit ? (
+            {canUpdatePackages && packageToEdit ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -840,7 +848,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                     <S.FilterMeta>{t('people.displayed', { count: filteredPackages.length })}</S.FilterMeta>
                 </div>
                 <S.FilterControls>
-                    {selectedPackageIds.length > 0 ? (
+                    {canUpdatePackages && selectedPackageIds.length > 0 ? (
                         <S.DangerButton type="button" onClick={() => setBulkDeleteOpen(true)}>
                             {t('common.bulkDelete', { count: selectedPackageIds.length })}
                         </S.DangerButton>
@@ -876,14 +884,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                 <S.Table>
                     <thead>
                         <tr>
-                            <th>
-                                <input
-                                    type="checkbox"
-                                    checked={allVisiblePackagesSelected}
-                                    aria-label={t('common.selectAll')}
-                                    onChange={toggleVisiblePackagesSelection}
-                                />
-                            </th>
+                            {canUpdatePackages ? (
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        checked={allVisiblePackagesSelected}
+                                        aria-label={t('common.selectAll')}
+                                        onChange={toggleVisiblePackagesSelection}
+                                    />
+                                </th>
+                            ) : null}
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('display_name')}>
                                     {t('assignments.package')}{sortIndicator('display_name')}
@@ -924,25 +934,27 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                     {t('packages.hashHeader')}{sortIndicator('hash')}
                                 </S.SortButton>
                             </th>
-                            <th>{t('common.actions')}</th>
+                            {canUpdatePackages ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
                     <tbody>
                         {filteredPackages.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={10}>{t('packages.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdatePackages ? 10 : 8}>{t('packages.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
                             filteredPackages.map((pkg) => (
                                 <tr key={pkg.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedPackageIds.includes(pkg.id)}
-                                            aria-label={t('common.selectRow')}
-                                            onChange={() => togglePackageSelection(pkg.id)}
-                                        />
-                                    </td>
+                                    {canUpdatePackages ? (
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedPackageIds.includes(pkg.id)}
+                                                aria-label={t('common.selectRow')}
+                                                onChange={() => togglePackageSelection(pkg.id)}
+                                            />
+                                        </td>
+                                    ) : null}
                                     <td>
                                         <S.PackageTitle>
                                             <PackageIcon iconUrl={pkg.icon_url} name={pkg.display_name} />
@@ -972,34 +984,36 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                     <td>
                                         <S.HashText>{pkg.hash}</S.HashText>
                                     </td>
-                                    <td>
-                                        <S.RowActions>
-                                            <S.TableIconButton
-                                                type="button"
-                                                aria-label={t('common.edit')}
-                                                title={t('common.edit')}
-                                                onClick={() => openEditModal(pkg)}
-                                            >
-                                                <TableIcon name="edit" />
-                                            </S.TableIconButton>
-                                            <S.TableIconButton
-                                                type="button"
-                                                $tone="danger"
-                                                aria-label={t('common.delete')}
-                                                title={t('common.delete')}
-                                                onClick={() => setPackageToDelete(pkg)}
-                                            >
-                                                <TableIcon name="delete" />
-                                            </S.TableIconButton>
-                                        </S.RowActions>
-                                    </td>
+                                    {canUpdatePackages ? (
+                                        <td>
+                                            <S.RowActions>
+                                                <S.TableIconButton
+                                                    type="button"
+                                                    aria-label={t('common.edit')}
+                                                    title={t('common.edit')}
+                                                    onClick={() => openEditModal(pkg)}
+                                                >
+                                                    <TableIcon name="edit" />
+                                                </S.TableIconButton>
+                                                <S.TableIconButton
+                                                    type="button"
+                                                    $tone="danger"
+                                                    aria-label={t('common.delete')}
+                                                    title={t('common.delete')}
+                                                    onClick={() => setPackageToDelete(pkg)}
+                                                >
+                                                    <TableIcon name="delete" />
+                                                </S.TableIconButton>
+                                            </S.RowActions>
+                                        </td>
+                                    ) : null}
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </S.Table>
             </S.TableCard>
-            <ConfirmModal
+            {canUpdatePackages ? <ConfirmModal
                 open={packageToDelete !== null}
                 title={t('packages.deleteTitle')}
                 description={
@@ -1017,8 +1031,8 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         onFinish: () => setPackageToDelete(null),
                     });
                 }}
-            />
-            <ConfirmModal
+            /> : null}
+            {canUpdatePackages ? <ConfirmModal
                 open={bulkDeleteOpen}
                 title={t('packages.bulkDeleteTitle')}
                 description={t('packages.bulkDeleteDescription', { count: selectedPackageIds.length })}
@@ -1034,7 +1048,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                         },
                     });
                 }}
-            />
+            /> : null}
         </S.PackagesManagerContainer>
     );
 }

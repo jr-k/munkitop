@@ -1,11 +1,12 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
 import MobileconfigModal from '../MobileconfigModal';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
-import { Group, ManifestPreview, Person } from '../../types';
+import { can } from '../../permissions';
+import { Group, ManifestPreview, PageProps, Person } from '../../types';
 import * as S from './styled';
 
 type GroupsManagerProps = {
@@ -29,6 +30,10 @@ function slugify(value: string): string {
 
 export default function GroupsManager({ groups, people }: GroupsManagerProps) {
     const { t } = useI18n();
+    const { props } = usePage<PageProps>();
+    const canUpdateGroups = can(props, 'groups', 'update');
+    const canShareMobileconfigs = can(props, 'links', 'update');
+    const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
     const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
     const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
@@ -329,16 +334,20 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                     <S.ToolbarDescription>{t('groups.description')}</S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
-                    <S.SecondaryButton as="a" href="/groups/csv">
-                        {t('common.exportCsv')}
-                    </S.SecondaryButton>
-                    <S.Button type="button" onClick={() => setCreateOpen(true)}>
-                        {t('common.add')}
-                    </S.Button>
+                    {canExport ? (
+                        <S.SecondaryButton as="a" href="/groups/csv">
+                            {t('common.exportCsv')}
+                        </S.SecondaryButton>
+                    ) : null}
+                    {canUpdateGroups ? (
+                        <S.Button type="button" onClick={() => setCreateOpen(true)}>
+                            {t('common.add')}
+                        </S.Button>
+                    ) : null}
                 </S.ToolbarActions>
             </S.Toolbar>
 
-            {createOpen ? (
+            {canUpdateGroups && createOpen ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -428,7 +437,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 </S.ModalOverlay>
             ) : null}
 
-            {groupToEdit ? (
+            {canUpdateGroups && groupToEdit ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -527,7 +536,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                     <S.FilterMeta>{t('people.displayed', { count: filteredGroups.length })}</S.FilterMeta>
                 </div>
                 <S.FilterControls>
-                    {selectedGroupIds.length > 0 ? (
+                    {canUpdateGroups && selectedGroupIds.length > 0 ? (
                         <S.DangerButton type="button" onClick={() => setBulkDeleteOpen(true)}>
                             {t('common.bulkDelete', { count: selectedGroupIds.length })}
                         </S.DangerButton>
@@ -592,14 +601,16 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 <S.Table>
                     <thead>
                         <tr>
-                            <th>
-                                <input
-                                    type="checkbox"
-                                    checked={allVisibleGroupsSelected}
-                                    aria-label={t('common.selectAll')}
-                                    onChange={toggleVisibleGroupsSelection}
-                                />
-                            </th>
+                            {canUpdateGroups ? (
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        checked={allVisibleGroupsSelected}
+                                        aria-label={t('common.selectAll')}
+                                        onChange={toggleVisibleGroupsSelection}
+                                    />
+                                </th>
+                            ) : null}
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('name')}>
                                     {t('common.groups')}{sortIndicator('name')}
@@ -622,26 +633,28 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                             </th>
                             <th>{t('common.manifest')}</th>
                             <th>{t('common.mobileconfig')}</th>
-                            <th>{t('common.actions')}</th>
+                            {canUpdateGroups ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
                     <tbody>
                         {filteredGroups.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={8}>{t('groups.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdateGroups ? 8 : 6}>{t('groups.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
                             filteredGroups.map((group) => (
                                 <tr key={group.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedGroupIds.includes(group.id)}
-                                            disabled={group.is_system}
-                                            aria-label={t('common.selectRow')}
-                                            onChange={() => toggleGroupSelection(group.id)}
-                                        />
-                                    </td>
+                                    {canUpdateGroups ? (
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedGroupIds.includes(group.id)}
+                                                disabled={group.is_system}
+                                                aria-label={t('common.selectRow')}
+                                                onChange={() => toggleGroupSelection(group.id)}
+                                            />
+                                        </td>
+                                    ) : null}
                                     <td>
                                         <S.PrimaryCell>{group.name}</S.PrimaryCell>
                                         {group.is_system ? <S.SystemBadge>{t('groups.system')}</S.SystemBadge> : null}
@@ -677,31 +690,33 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
                                     </td>
-                                    <td>
-                                        {group.is_system ? (
-                                            <S.Meta>{t('groups.notEditable')}</S.Meta>
-                                        ) : (
-                                            <S.RowActions>
-                                                <S.TableIconButton
-                                                    type="button"
-                                                    aria-label={t('common.edit')}
-                                                    title={t('common.edit')}
-                                                    onClick={() => openEditModal(group)}
-                                                >
-                                                    <TableIcon name="edit" />
-                                                </S.TableIconButton>
-                                                <S.TableIconButton
-                                                    type="button"
-                                                    $tone="danger"
-                                                    aria-label={t('common.delete')}
-                                                    title={t('common.delete')}
-                                                    onClick={() => setGroupToDelete(group)}
-                                                >
-                                                    <TableIcon name="delete" />
-                                                </S.TableIconButton>
-                                            </S.RowActions>
-                                        )}
-                                    </td>
+                                    {canUpdateGroups ? (
+                                        <td>
+                                            {group.is_system ? (
+                                                <S.Meta>{t('groups.notEditable')}</S.Meta>
+                                            ) : (
+                                                <S.RowActions>
+                                                    <S.TableIconButton
+                                                        type="button"
+                                                        aria-label={t('common.edit')}
+                                                        title={t('common.edit')}
+                                                        onClick={() => openEditModal(group)}
+                                                    >
+                                                        <TableIcon name="edit" />
+                                                    </S.TableIconButton>
+                                                    <S.TableIconButton
+                                                        type="button"
+                                                        $tone="danger"
+                                                        aria-label={t('common.delete')}
+                                                        title={t('common.delete')}
+                                                        onClick={() => setGroupToDelete(group)}
+                                                    >
+                                                        <TableIcon name="delete" />
+                                                    </S.TableIconButton>
+                                                </S.RowActions>
+                                            )}
+                                        </td>
+                                    ) : null}
                                 </tr>
                             ))
                         )}
@@ -756,10 +771,11 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                     previewUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig/preview`}
                     downloadUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig`}
                     shareUrl={`/munki/groups/${mobileconfigToView.id}/mobileconfig/share`}
+                    canShare={canShareMobileconfigs}
                     onClose={() => setMobileconfigToView(null)}
                 />
             ) : null}
-            <ConfirmModal
+            {canUpdateGroups ? <ConfirmModal
                 open={groupToDelete !== null}
                 title={t('groups.deleteTitle')}
                 description={
@@ -777,8 +793,8 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                         onFinish: () => setGroupToDelete(null),
                     });
                 }}
-            />
-            <ConfirmModal
+            /> : null}
+            {canUpdateGroups ? <ConfirmModal
                 open={bulkDeleteOpen}
                 title={t('groups.bulkDeleteTitle')}
                 description={t('groups.bulkDeleteDescription', { count: selectedGroupIds.length })}
@@ -794,7 +810,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                         },
                     });
                 }}
-            />
+            /> : null}
         </S.GroupsManagerContainer>
     );
 }

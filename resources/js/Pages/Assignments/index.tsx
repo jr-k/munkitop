@@ -15,7 +15,7 @@ type AssignmentsPageProps = PageProps & {
 export default function Assignments({ assignments, groups, packages, people }: AssignmentsPageProps) {
     const { props } = usePage<AssignmentsPageProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     return (
         <>

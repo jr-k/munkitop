@@ -58,7 +58,7 @@ export default function PackageIndex({ packages, groups, people, filters }: Pack
     const { props } = usePage<PackageIndexProps>();
     const { t } = useI18n();
     const [values, setValues] = useState<Filters>(filters);
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     function setFilter(key: keyof Filters, value: string) {
         setValues((current) => ({ ...current, [key]: value }));

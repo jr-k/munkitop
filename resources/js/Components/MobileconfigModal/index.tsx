@@ -9,6 +9,7 @@ type MobileconfigModalProps = {
     previewUrl: string;
     downloadUrl: string;
     shareUrl: string;
+    canShare?: boolean;
     onClose: () => void;
 };
 
@@ -35,6 +36,7 @@ export default function MobileconfigModal({
     previewUrl,
     downloadUrl,
     shareUrl,
+    canShare = false,
     onClose,
 }: MobileconfigModalProps) {
     const { t } = useI18n();
@@ -217,21 +219,22 @@ export default function MobileconfigModal({
                     </S.Preview>
                 )}
 
-                <S.ShareBox>
-                    <S.ShareControls>
-                        <S.ShareLabel>
-                            <span>{t('mobileconfig.expiration')}</span>
-                            <S.Select value={expiresIn} onChange={(event) => setExpiresIn(event.target.value)}>
-                                <option value="never">{t('mobileconfig.neverExpires')}</option>
-                                <option value="1d">{t('mobileconfig.expiresInOneDay')}</option>
-                                <option value="7d">{t('mobileconfig.expiresInSevenDays')}</option>
-                                <option value="30d">{t('mobileconfig.expiresInThirtyDays')}</option>
-                            </S.Select>
-                        </S.ShareLabel>
-                        <S.Button type="button" onClick={publish} disabled={publishing}>
-                            {publishing ? t('mobileconfig.publishing') : t('mobileconfig.share')}
-                        </S.Button>
-                    </S.ShareControls>
+                {canShare ? (
+                    <S.ShareBox>
+                        <S.ShareControls>
+                            <S.ShareLabel>
+                                <span>{t('mobileconfig.expiration')}</span>
+                                <S.Select value={expiresIn} onChange={(event) => setExpiresIn(event.target.value)}>
+                                    <option value="never">{t('mobileconfig.neverExpires')}</option>
+                                    <option value="1d">{t('mobileconfig.expiresInOneDay')}</option>
+                                    <option value="7d">{t('mobileconfig.expiresInSevenDays')}</option>
+                                    <option value="30d">{t('mobileconfig.expiresInThirtyDays')}</option>
+                                </S.Select>
+                            </S.ShareLabel>
+                            <S.Button type="button" onClick={publish} disabled={publishing}>
+                                {publishing ? t('mobileconfig.publishing') : t('mobileconfig.share')}
+                            </S.Button>
+                        </S.ShareControls>
 
                     {shareLink ? (
                         <S.ShareResult>
@@ -283,7 +286,8 @@ export default function MobileconfigModal({
                             {emailError ? <S.EmailError role="alert">{emailError}</S.EmailError> : null}
                         </S.EmailBox>
                     ) : null}
-                </S.ShareBox>
+                    </S.ShareBox>
+                ) : null}
 
                 <S.Actions>
                     {shareLink ? (

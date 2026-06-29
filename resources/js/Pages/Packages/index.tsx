@@ -12,7 +12,7 @@ type PackagesPageProps = PageProps & {
 export default function Packages({ packages }: PackagesPageProps) {
     const { props } = usePage<PackagesPageProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     return (
         <>

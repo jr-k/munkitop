@@ -1,11 +1,12 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
 import MobileconfigModal from '../MobileconfigModal';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
-import { Group, ManifestPreview, Person } from '../../types';
+import { can } from '../../permissions';
+import { Group, ManifestPreview, PageProps, Person } from '../../types';
 import * as S from './styled';
 
 type PeopleManagerProps = {
@@ -18,6 +19,10 @@ type PeopleSortKey = 'name' | 'first_name' | 'email' | 'client_identifier' | 'gr
 
 export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const { t } = useI18n();
+    const { props } = usePage<PageProps>();
+    const canUpdatePeople = can(props, 'people', 'update');
+    const canShareMobileconfigs = can(props, 'links', 'update');
+    const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
     const [groupsOpen, setGroupsOpen] = useState(false);
     const [editGroupsOpen, setEditGroupsOpen] = useState(false);
@@ -304,16 +309,20 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     </S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
-                    <S.SecondaryButton as="a" href="/people/csv">
-                        {t('common.exportCsv')}
-                    </S.SecondaryButton>
-                    <S.Button type="button" onClick={() => setCreateOpen(true)}>
-                        {t('common.add')}
-                    </S.Button>
+                    {canExport ? (
+                        <S.SecondaryButton as="a" href="/people/csv">
+                            {t('common.exportCsv')}
+                        </S.SecondaryButton>
+                    ) : null}
+                    {canUpdatePeople ? (
+                        <S.Button type="button" onClick={() => setCreateOpen(true)}>
+                            {t('common.add')}
+                        </S.Button>
+                    ) : null}
                 </S.ToolbarActions>
             </S.Toolbar>
 
-            {createOpen ? (
+            {canUpdatePeople && createOpen ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target !== event.currentTarget) {
@@ -428,7 +437,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     <S.FilterMeta>{t('people.displayed', { count: visiblePeople.length })}</S.FilterMeta>
                 </div>
                 <S.FilterControls>
-                    {selectedPersonIds.length > 0 ? (
+                    {canUpdatePeople && selectedPersonIds.length > 0 ? (
                         <S.DangerButton type="button" onClick={() => setBulkDeleteOpen(true)}>
                             {t('common.bulkDelete', { count: selectedPersonIds.length })}
                         </S.DangerButton>
@@ -503,14 +512,16 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 <S.Table>
                     <thead>
                         <tr>
-                            <th>
-                                <input
-                                    type="checkbox"
-                                    checked={allVisiblePeopleSelected}
-                                    aria-label={t('common.selectAll')}
-                                    onChange={toggleVisiblePeopleSelection}
-                                />
-                            </th>
+                            {canUpdatePeople ? (
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        checked={allVisiblePeopleSelected}
+                                        aria-label={t('common.selectAll')}
+                                        onChange={toggleVisiblePeopleSelection}
+                                    />
+                                </th>
+                            ) : null}
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('name')}>
                                     {t('people.name')}{sortIndicator('name')}
@@ -538,25 +549,27 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                             </th>
                             <th>{t('common.manifest')}</th>
                             <th>{t('common.mobileconfig')}</th>
-                            <th>{t('common.actions')}</th>
+                            {canUpdatePeople ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
                     <tbody>
                         {visiblePeople.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={9}>{t('people.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdatePeople ? 9 : 7}>{t('people.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
                             visiblePeople.map((person) => (
                                 <tr key={person.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedPersonIds.includes(person.id)}
-                                            aria-label={t('common.selectRow')}
-                                            onChange={() => togglePersonSelection(person.id)}
-                                        />
-                                    </td>
+                                    {canUpdatePeople ? (
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedPersonIds.includes(person.id)}
+                                                aria-label={t('common.selectRow')}
+                                                onChange={() => togglePersonSelection(person.id)}
+                                            />
+                                        </td>
+                                    ) : null}
                                     <td>
                                         <S.PrimaryCell>{person.name}</S.PrimaryCell>
                                     </td>
@@ -592,27 +605,29 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                             <TableIcon name="download" />
                                         </S.TableIconButton>
                                     </td>
-                                    <td>
-                                        <S.RowActions>
-                                            <S.TableIconButton
-                                                type="button"
-                                                aria-label={t('common.edit')}
-                                                title={t('common.edit')}
-                                                onClick={() => openEditModal(person)}
-                                            >
-                                                <TableIcon name="edit" />
-                                            </S.TableIconButton>
-                                            <S.TableIconButton
-                                                type="button"
-                                                $tone="danger"
-                                                aria-label={t('common.delete')}
-                                                title={t('common.delete')}
-                                                onClick={() => setPersonToDelete(person)}
-                                            >
-                                                <TableIcon name="delete" />
-                                            </S.TableIconButton>
-                                        </S.RowActions>
-                                    </td>
+                                    {canUpdatePeople ? (
+                                        <td>
+                                            <S.RowActions>
+                                                <S.TableIconButton
+                                                    type="button"
+                                                    aria-label={t('common.edit')}
+                                                    title={t('common.edit')}
+                                                    onClick={() => openEditModal(person)}
+                                                >
+                                                    <TableIcon name="edit" />
+                                                </S.TableIconButton>
+                                                <S.TableIconButton
+                                                    type="button"
+                                                    $tone="danger"
+                                                    aria-label={t('common.delete')}
+                                                    title={t('common.delete')}
+                                                    onClick={() => setPersonToDelete(person)}
+                                                >
+                                                    <TableIcon name="delete" />
+                                                </S.TableIconButton>
+                                            </S.RowActions>
+                                        </td>
+                                    ) : null}
                                 </tr>
                             ))
                         )}
@@ -667,10 +682,11 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     previewUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig/preview`}
                     downloadUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig`}
                     shareUrl={`/munki/people/${mobileconfigToView.id}/mobileconfig/share`}
+                    canShare={canShareMobileconfigs}
                     onClose={() => setMobileconfigToView(null)}
                 />
             ) : null}
-            {personToEdit ? (
+            {canUpdatePeople && personToEdit ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -766,7 +782,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     </S.EditDialog>
                 </S.ModalOverlay>
             ) : null}
-            <ConfirmModal
+            {canUpdatePeople ? <ConfirmModal
                 open={personToDelete !== null}
                 title={t('people.deleteTitle')}
                 description={
@@ -784,8 +800,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                         onFinish: () => setPersonToDelete(null),
                     });
                 }}
-            />
-            <ConfirmModal
+            /> : null}
+            {canUpdatePeople ? <ConfirmModal
                 open={bulkDeleteOpen}
                 title={t('people.bulkDeleteTitle')}
                 description={t('people.bulkDeleteDescription', { count: selectedPersonIds.length })}
@@ -801,7 +817,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                         },
                     });
                 }}
-            />
+            /> : null}
         </S.PeopleManagerContainer>
     );
 }

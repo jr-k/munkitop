@@ -5,6 +5,6 @@ return [
     'default_catalog' => env('MUNKI_DEFAULT_CATALOG', 'production'),
     'base_manifest' => env('MUNKI_BASE_MANIFEST', 'base'),
     'package_x_accel' => env('MUNKI_PACKAGE_X_ACCEL', false),
-    'admin_email' => env('ADMIN_EMAIL', 'admin@example.com'),
-    'admin_password' => env('ADMIN_PASSWORD', 'password'),
+    'admin_email' => env('ADMIN_EMAIL', ''),
+    'admin_password' => env('ADMIN_PASSWORD', ''),
 ];

@@ -44,7 +44,9 @@ if [ "$(id -u)" = "0" ]; then
   fi
 fi
 
-if [ "${APP_ENV:-production}" != "local" ]; then
+if [ "${APP_ENV:-production}" = "local" ]; then
+  run_as_app_user php artisan optimize:clear --no-ansi
+else
   if [ -z "${APP_KEY:-}" ]; then
     echo "APP_KEY must be set in production." >&2
     exit 1

@@ -2,11 +2,12 @@ import { PropsWithChildren } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import LogoMark from '../LogoMark';
 import { useI18n } from '../../i18n';
+import { can } from '../../permissions';
 import { PageProps } from '../../types';
 import * as S from './styled';
 
 type AppLayoutProps = PropsWithChildren<{
-    adminEmail: string;
+    adminEmail?: string;
 }>;
 
 export default function AppLayout({ adminEmail, children }: AppLayoutProps) {
@@ -14,29 +15,36 @@ export default function AppLayout({ adminEmail, children }: AppLayoutProps) {
     const { props, url } = usePage<PageProps>();
     const displayName = props.app.display_name;
     const version = props.app.version;
+    const signedInEmail = adminEmail ?? props.auth.user?.email ?? 'admin';
     const sections = [
         {
             title: t('layout.directorySection'),
             links: [
-                { href: '/people', label: t('common.people') },
-                { href: '/groups', label: t('common.groups') },
-                { href: '/links', label: t('common.links') },
-            ],
+                { href: '/people', label: t('common.people'), visible: can(props, 'people', 'read') },
+                { href: '/groups', label: t('common.groups'), visible: can(props, 'groups', 'read') },
+                { href: '/links', label: t('common.links'), visible: can(props, 'links', 'read') },
+            ].filter((link) => link.visible),
         },
         {
             title: t('layout.softwareSection'),
             links: [
-                { href: '/packages', label: t('common.packages') },
-            ],
+                { href: '/packages', label: t('common.packages'), visible: can(props, 'packages', 'read') },
+            ].filter((link) => link.visible),
         },
         {
             title: t('layout.deploymentSection'),
             links: [
-                { href: '/assignments', label: t('common.assignments') },
-                { href: '/munki', label: t('common.export') },
-            ],
+                { href: '/assignments', label: t('common.assignments'), visible: can(props, 'assignments', 'read') },
+                { href: '/munki', label: t('common.export'), visible: can(props, 'export') },
+            ].filter((link) => link.visible),
         },
-    ];
+        {
+            title: t('layout.administrationSection'),
+            links: [
+                { href: '/users', label: t('common.users'), visible: can(props, 'users', 'manage') },
+            ].filter((link) => link.visible),
+        },
+    ].filter((section) => section.links.length > 0);
 
     return (
         <S.AppLayoutContainer>
@@ -87,7 +95,7 @@ export default function AppLayout({ adminEmail, children }: AppLayoutProps) {
                     <S.UserFooter>
                         <S.SignedIn>
                             <span>{t('layout.connectedAs')}</span>
-                            <S.SignedInEmail>{adminEmail}</S.SignedInEmail>
+                            <S.SignedInEmail>{signedInEmail}</S.SignedInEmail>
                         </S.SignedIn>
                         <S.LogoutButton type="button" onClick={() => router.post('/logout')} aria-label={t('layout.logout')} title={t('layout.logout')}>
                             <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">

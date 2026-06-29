@@ -57,6 +57,7 @@ class MunkiProfileController extends Controller
 
         return view('mobileconfig-share', [
             'clientDownloadUrl' => $this->munkiClientDownloadUrl(),
+            'checkIntervalScriptUrl' => route('scripts.set-munki-check-interval'),
             'downloadUrl' => route('mobileconfig.shared.download', $share),
             'fileName' => $payload['fileName'],
             'profileName' => $payload['profileName'],

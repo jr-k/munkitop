@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
@@ -6,7 +6,8 @@ import PackageIcon from '../PackageIcon';
 import TableIcon from '../TableIcon';
 import TargetIcon from '../TargetIcon';
 import { useI18n } from '../../i18n';
-import { Assignment, Group, Package, Person } from '../../types';
+import { can } from '../../permissions';
+import { Assignment, Group, Package, PageProps, Person } from '../../types';
 import * as S from './styled';
 
 type AssignmentsManagerProps = {
@@ -27,6 +28,9 @@ type AssignmentSortKey = 'package' | 'munki_name' | 'action' | 'target_type' | '
 
 export default function AssignmentsManager({ assignments, groups, packages, people }: AssignmentsManagerProps) {
     const { t } = useI18n();
+    const { props } = usePage<PageProps>();
+    const canUpdateAssignments = can(props, 'assignments', 'update');
+    const canExport = can(props, 'export');
     const [createOpen, setCreateOpen] = useState(false);
     const [packageDropdownOpen, setPackageDropdownOpen] = useState(false);
     const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
@@ -299,16 +303,20 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                     <S.ToolbarDescription>{t('assignments.description')}</S.ToolbarDescription>
                 </div>
                 <S.ToolbarActions>
-                    <S.SecondaryButton as="a" href="/assignments/csv">
-                        {t('common.exportCsv')}
-                    </S.SecondaryButton>
-                    <S.Button type="button" onClick={() => setCreateOpen(true)}>
-                        {t('common.add')}
-                    </S.Button>
+                    {canExport ? (
+                        <S.SecondaryButton as="a" href="/assignments/csv">
+                            {t('common.exportCsv')}
+                        </S.SecondaryButton>
+                    ) : null}
+                    {canUpdateAssignments ? (
+                        <S.Button type="button" onClick={() => setCreateOpen(true)}>
+                            {t('common.add')}
+                        </S.Button>
+                    ) : null}
                 </S.ToolbarActions>
             </S.Toolbar>
 
-            {createOpen ? (
+            {canUpdateAssignments && createOpen ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
@@ -498,7 +506,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                     <S.FilterMeta>{t('people.displayed', { count: filteredAssignments.length })}</S.FilterMeta>
                 </div>
                 <S.FilterControls>
-                    {selectedAssignmentIds.length > 0 ? (
+                    {canUpdateAssignments && selectedAssignmentIds.length > 0 ? (
                         <S.DangerButton type="button" onClick={() => setBulkDeleteOpen(true)}>
                             {t('common.bulkDelete', { count: selectedAssignmentIds.length })}
                         </S.DangerButton>
@@ -584,14 +592,16 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 <S.Table>
                     <thead>
                         <tr>
-                            <th>
-                                <input
-                                    type="checkbox"
-                                    checked={allVisibleAssignmentsSelected}
-                                    aria-label={t('common.selectAll')}
-                                    onChange={toggleVisibleAssignmentsSelection}
-                                />
-                            </th>
+                            {canUpdateAssignments ? (
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        checked={allVisibleAssignmentsSelected}
+                                        aria-label={t('common.selectAll')}
+                                        onChange={toggleVisibleAssignmentsSelection}
+                                    />
+                                </th>
+                            ) : null}
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('package')}>
                                     {t('assignments.package')}{sortIndicator('package')}
@@ -612,25 +622,27 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                     {t('assignments.target')}{sortIndicator('target')}
                                 </S.SortButton>
                             </th>
-                            <th>{t('common.actions')}</th>
+                            {canUpdateAssignments ? <th>{t('common.actions')}</th> : null}
                         </tr>
                     </thead>
                     <tbody>
                         {filteredAssignments.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={6}>{t('assignments.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdateAssignments ? 6 : 4}>{t('assignments.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
                             filteredAssignments.map((assignment) => (
                                 <tr key={assignment.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedAssignmentIds.includes(assignment.id)}
-                                            aria-label={t('common.selectRow')}
-                                            onChange={() => toggleAssignmentSelection(assignment.id)}
-                                        />
-                                    </td>
+                                    {canUpdateAssignments ? (
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedAssignmentIds.includes(assignment.id)}
+                                                aria-label={t('common.selectRow')}
+                                                onChange={() => toggleAssignmentSelection(assignment.id)}
+                                            />
+                                        </td>
+                                    ) : null}
                                     <td>
                                         <S.PackageTitle>
                                             <PackageIcon iconUrl={assignment.package.icon_url} name={assignment.package.name ?? ''} />
@@ -649,24 +661,26 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                             <S.PrimaryCell>{assignment.target.name}</S.PrimaryCell>
                                         </S.TargetTitle>
                                     </td>
-                                    <td>
-                                        <S.TableIconButton
-                                            type="button"
-                                            $tone="danger"
-                                            aria-label={t('common.delete')}
-                                            title={t('common.delete')}
-                                            onClick={() => setAssignmentToDelete(assignment)}
-                                        >
-                                            <TableIcon name="delete" />
-                                        </S.TableIconButton>
-                                    </td>
+                                    {canUpdateAssignments ? (
+                                        <td>
+                                            <S.TableIconButton
+                                                type="button"
+                                                $tone="danger"
+                                                aria-label={t('common.delete')}
+                                                title={t('common.delete')}
+                                                onClick={() => setAssignmentToDelete(assignment)}
+                                            >
+                                                <TableIcon name="delete" />
+                                            </S.TableIconButton>
+                                        </td>
+                                    ) : null}
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </S.Table>
             </S.TableCard>
-            <ConfirmModal
+            {canUpdateAssignments ? <ConfirmModal
                 open={assignmentToDelete !== null}
                 title={t('assignments.deleteTitle')}
                 description={
@@ -687,8 +701,8 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                         onFinish: () => setAssignmentToDelete(null),
                     });
                 }}
-            />
-            <ConfirmModal
+            /> : null}
+            {canUpdateAssignments ? <ConfirmModal
                 open={bulkDeleteOpen}
                 title={t('assignments.bulkDeleteTitle')}
                 description={t('assignments.bulkDeleteDescription', { count: selectedAssignmentIds.length })}
@@ -704,7 +718,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                         },
                     });
                 }}
-            />
+            /> : null}
         </S.AssignmentsManagerContainer>
     );
 }

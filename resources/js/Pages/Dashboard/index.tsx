@@ -31,7 +31,7 @@ type DashboardProps = PageProps & {
 export default function Dashboard({ people, groups, packages, assignments, munki }: DashboardProps) {
     const { props } = usePage<DashboardProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
 
     return (
         <S.DashboardContainer>

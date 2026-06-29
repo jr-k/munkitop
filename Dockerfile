@@ -75,6 +75,7 @@ COPY composer.json composer.lock package.json package-lock.json ./
 RUN (composer install --no-interaction --prefer-dist --no-scripts \
   || composer install --no-interaction --prefer-source --no-scripts) \
   && npm ci
+COPY docker/opcache-dev.ini /usr/local/etc/php/conf.d/zz-opcache-dev.ini
 COPY . .
 RUN composer dump-autoload
 CMD ["sh", "-lc", "npx concurrently -c \"#93c5fd,#c4b5fd\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"npm run dev -- --host 0.0.0.0\" --names=server,vite --kill-others"]

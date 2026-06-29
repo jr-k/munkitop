@@ -95,9 +95,35 @@ export type MobileconfigShare = {
     created_at: string | null;
 };
 
+export type UserRole = 'owner' | 'admin' | 'user';
+
+export type PermissionResource = 'people' | 'groups' | 'links' | 'packages' | 'assignments';
+
+export type PermissionAction = 'read' | 'update';
+
+export type ManagedUser = {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+    is_owner: boolean;
+    permissions: string[];
+    created_at: string | null;
+    last_login_at: string | null;
+};
+
 export type PageProps = {
     auth: {
-        admin: { email: string } | null;
+        user: {
+            id: number;
+            name: string;
+            email: string;
+            role: UserRole;
+            is_owner: boolean;
+        } | null;
+        permissions: string[];
+        isAdmin: boolean;
+        isOwner: boolean;
     };
     app: {
         display_name: string;

@@ -6,6 +6,7 @@ import FlashMessage from '../../Components/FlashMessage';
 import TableIcon from '../../Components/TableIcon';
 import TargetIcon from '../../Components/TargetIcon';
 import { useI18n } from '../../i18n';
+import { can } from '../../permissions';
 import { Group, MobileconfigShare, PageProps, Person } from '../../types';
 import * as S from './styled';
 
@@ -25,7 +26,8 @@ type EmailResponse = {
 export default function Shares({ shares, people, groups }: SharesPageProps) {
     const { props } = usePage<SharesPageProps>();
     const { t } = useI18n();
-    const adminEmail = props.auth.admin?.email ?? 'admin';
+    const adminEmail = props.auth.user?.email ?? 'admin';
+    const canUpdateLinks = can(props, 'links', 'update');
     const [search, setSearch] = useState('');
     const [targetsOpen, setTargetsOpen] = useState(false);
     const [targetSearch, setTargetSearch] = useState('');
@@ -320,20 +322,29 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
     }, [targetsOpen]);
 
     useEffect(() => {
-        if (!shareToEmail) {
+        if (!shareToEdit && !shareToEmail) {
             return;
         }
 
         function closeOnEscape(event: KeyboardEvent) {
-            if (event.key === 'Escape') {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            if (shareToEmail) {
                 closeEmailModal();
+                return;
+            }
+
+            if (shareToEdit) {
+                closeEditModal();
             }
         }
 
         window.addEventListener('keydown', closeOnEscape);
 
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [shareToEmail]);
+    }, [shareToEdit, shareToEmail]);
 
     return (
         <>
@@ -356,7 +367,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                             <S.FilterMeta>{t('people.displayed', { count: filteredShares.length })}</S.FilterMeta>
                         </div>
                         <S.FilterControls>
-                            {selectedShareIds.length > 0 ? (
+                            {canUpdateLinks && selectedShareIds.length > 0 ? (
                                 <S.DangerButton type="button" onClick={() => setBulkDeleteOpen(true)}>
                                     {t('common.bulkDelete', { count: selectedShareIds.length })}
                                 </S.DangerButton>
@@ -434,14 +445,16 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                         <S.Table>
                             <thead>
                                 <tr>
-                                    <th>
-                                        <input
-                                            type="checkbox"
-                                            checked={allVisibleSharesSelected}
-                                            aria-label={t('common.selectAll')}
-                                            onChange={toggleVisibleSharesSelection}
-                                        />
-                                    </th>
+                                    {canUpdateLinks ? (
+                                        <th>
+                                            <input
+                                                type="checkbox"
+                                                checked={allVisibleSharesSelected}
+                                                aria-label={t('common.selectAll')}
+                                                onChange={toggleVisibleSharesSelection}
+                                            />
+                                        </th>
+                                    ) : null}
                                     <th>
                                         <S.SortButton type="button" onClick={() => changeSort('ulid')}>
                                             ULID{sortIndicator('ulid')}
@@ -477,25 +490,27 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                             {t('shares.expiresAt')}{sortIndicator('expires_at')}
                                         </S.SortButton>
                                     </th>
-                                    <th>{t('common.actions')}</th>
+                                    {canUpdateLinks ? <th>{t('common.actions')}</th> : null}
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredShares.length === 0 ? (
                                     <tr>
-                                        <S.EmptyCell colSpan={9}>{t('shares.noMatch')}</S.EmptyCell>
+                                        <S.EmptyCell colSpan={canUpdateLinks ? 9 : 7}>{t('shares.noMatch')}</S.EmptyCell>
                                     </tr>
                                 ) : (
                                     filteredShares.map((share) => (
                                         <tr key={share.id}>
-                                            <td>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedShareIds.includes(share.id)}
-                                                    aria-label={t('common.selectRow')}
-                                                    onChange={() => toggleShareSelection(share.id)}
-                                                />
-                                            </td>
+                                            {canUpdateLinks ? (
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedShareIds.includes(share.id)}
+                                                        aria-label={t('common.selectRow')}
+                                                        onChange={() => toggleShareSelection(share.id)}
+                                                    />
+                                                </td>
+                                            ) : null}
                                             <td>
                                                 <S.CodePill>{share.ulid}</S.CodePill>
                                             </td>
@@ -550,36 +565,38 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                             <td>
                                                 <S.DateText>{formatDate(share.expires_at)}</S.DateText>
                                             </td>
-                                            <td>
-                                                <S.RowActions>
-                                                    <S.TableIconButton
-                                                        type="button"
-                                                        $tone="warning"
-                                                        aria-label={t('mobileconfig.emailTitle')}
-                                                        title={t('mobileconfig.emailTitle')}
-                                                        onClick={() => openEmailModal(share)}
-                                                    >
-                                                        <TableIcon name="email" />
-                                                    </S.TableIconButton>
-                                                    <S.TableIconButton
-                                                        type="button"
-                                                        aria-label={t('common.edit')}
-                                                        title={t('common.edit')}
-                                                        onClick={() => openEditModal(share)}
-                                                    >
-                                                        <TableIcon name="edit" />
-                                                    </S.TableIconButton>
-                                                    <S.TableIconButton
-                                                        type="button"
-                                                        $tone="danger"
-                                                        aria-label={t('common.delete')}
-                                                        title={t('common.delete')}
-                                                        onClick={() => setShareToDelete(share)}
-                                                    >
-                                                        <TableIcon name="delete" />
-                                                    </S.TableIconButton>
-                                                </S.RowActions>
-                                            </td>
+                                            {canUpdateLinks ? (
+                                                <td>
+                                                    <S.RowActions>
+                                                        <S.TableIconButton
+                                                            type="button"
+                                                            $tone="warning"
+                                                            aria-label={t('mobileconfig.emailTitle')}
+                                                            title={t('mobileconfig.emailTitle')}
+                                                            onClick={() => openEmailModal(share)}
+                                                        >
+                                                            <TableIcon name="email" />
+                                                        </S.TableIconButton>
+                                                        <S.TableIconButton
+                                                            type="button"
+                                                            aria-label={t('common.edit')}
+                                                            title={t('common.edit')}
+                                                            onClick={() => openEditModal(share)}
+                                                        >
+                                                            <TableIcon name="edit" />
+                                                        </S.TableIconButton>
+                                                        <S.TableIconButton
+                                                            type="button"
+                                                            $tone="danger"
+                                                            aria-label={t('common.delete')}
+                                                            title={t('common.delete')}
+                                                            onClick={() => setShareToDelete(share)}
+                                                        >
+                                                            <TableIcon name="delete" />
+                                                        </S.TableIconButton>
+                                                    </S.RowActions>
+                                                </td>
+                                            ) : null}
                                         </tr>
                                     ))
                                 )}
@@ -588,7 +605,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                     </S.TableCard>
                 </S.Container>
 
-                {shareToEdit ? (
+                {canUpdateLinks && shareToEdit ? (
                     <S.ModalOverlay
                         onMouseDown={(event) => {
                             if (event.target === event.currentTarget) {
@@ -627,7 +644,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                     </S.ModalOverlay>
                 ) : null}
 
-                {shareToEmail ? (
+                {canUpdateLinks && shareToEmail ? (
                     <S.ModalOverlay
                         onMouseDown={(event) => {
                             if (event.target === event.currentTarget) {
@@ -693,7 +710,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                     </S.ModalOverlay>
                 ) : null}
 
-                <ConfirmModal
+                {canUpdateLinks ? <ConfirmModal
                     open={shareToDelete !== null}
                     title={t('shares.deleteTitle')}
                     description={shareToDelete ? t('shares.deleteDescription', { ulid: shareToDelete.ulid }) : ''}
@@ -707,8 +724,8 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                             onFinish: () => setShareToDelete(null),
                         });
                     }}
-                />
-                <ConfirmModal
+                /> : null}
+                {canUpdateLinks ? <ConfirmModal
                     open={bulkDeleteOpen}
                     title={t('shares.bulkDeleteTitle')}
                     description={t('shares.bulkDeleteDescription', { count: selectedShareIds.length })}
@@ -724,7 +741,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                             },
                         });
                     }}
-                />
+                /> : null}
                 {copiedShareId !== null ? <S.Toast role="status">{t('mobileconfig.copied')}</S.Toast> : null}
             </AppLayout>
         </>
