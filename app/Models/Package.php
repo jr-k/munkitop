@@ -11,6 +11,8 @@ class Package extends Model
     protected $fillable = [
         'munki_name',
         'display_name',
+        'category',
+        'description',
         'bundle_identifier',
         'version',
         'icon_path',

@@ -2,10 +2,11 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import PaginationControls, { usePagination } from '../Pagination';
 import PackageIcon from '../PackageIcon';
 import TableIcon from '../TableIcon';
 import TargetIcon from '../TargetIcon';
-import { useI18n } from '../../i18n';
+import { type TranslationKey, useI18n } from '../../i18n';
 import { can } from '../../permissions';
 import { Package, PageProps } from '../../types';
 import * as S from './styled';
@@ -14,9 +15,25 @@ type PackagesManagerProps = {
     packages: Package[];
 };
 
+const packageCategories = [
+    'browsers',
+    'developer_tools',
+    'security',
+    'productivity',
+    'communication',
+    'internal',
+    'utilities',
+    'media',
+    'system',
+] as const;
+
+type PackageCategory = (typeof packageCategories)[number];
+
 type PackageFormData = {
     munki_name: string;
     display_name: string;
+    category: PackageCategory;
+    description: string;
     bundle_identifier: string;
     version: string;
     icon: File | null;
@@ -61,6 +78,8 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
     const form = useForm<PackageFormData>({
         munki_name: '',
         display_name: '',
+        category: 'utilities',
+        description: '',
         bundle_identifier: '',
         version: '',
         icon: null,
@@ -73,6 +92,8 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
     const editForm = useForm<PackageFormData>({
         munki_name: '',
         display_name: '',
+        category: 'utilities',
+        description: '',
         bundle_identifier: '',
         version: '',
         icon: null,
@@ -112,6 +133,8 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         editForm.setData({
             munki_name: pkg.munki_name,
             display_name: pkg.display_name,
+            category: (packageCategories.includes(pkg.category as PackageCategory) ? pkg.category : 'utilities') as PackageCategory,
+            description: pkg.description ?? '',
             bundle_identifier: pkg.bundle_identifier ?? '',
             version: pkg.version ?? '',
             icon: null,
@@ -242,6 +265,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
 
         return !normalizedMatrixSearch || searchable.includes(normalizedMatrixSearch);
     });
+    const profileMatrixPagination = usePagination(profileMatrixRows, {
+        key: 'package_matrix_profiles',
+        syncUrl: matrixOpen && matrixMode === 'profiles',
+    });
+    const paginatedProfileMatrixRows = profileMatrixPagination.items;
+    const packageMatrixPagination = usePagination(packageMatrixRows, {
+        key: 'package_matrix_packages',
+        syncUrl: matrixOpen && matrixMode === 'packages',
+    });
+    const paginatedPackageMatrixRows = packageMatrixPagination.items;
     const editPackageFileUrl = packageToEdit?.pkg_file_url ?? null;
     const editPackageDownloadUrl = editPackageFileUrl ? `${editPackageFileUrl}?download=1` : null;
     const editPackageIconUrl = packageToEdit?.icon_url ?? null;
@@ -309,7 +342,9 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
         );
     }
 
-    const visiblePackageIds = filteredPackages.map((pkg) => pkg.id);
+    const packagesPagination = usePagination(filteredPackages);
+    const paginatedPackages = packagesPagination.items;
+    const visiblePackageIds = paginatedPackages.map((pkg) => pkg.id);
     const allVisiblePackagesSelected = visiblePackageIds.length > 0
         && visiblePackageIds.every((id) => selectedPackageIds.includes(id));
 
@@ -392,30 +427,42 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             </S.IconButton>
                         </S.ModalHeader>
                         <S.Form onSubmit={submit}>
-                    <FormField label={t('packages.munkiName')} error={form.errors.munki_name}>
+                    <FormField label={t('packages.displayName')} error={form.errors.display_name}>
                         <S.Input
-                            value={form.data.munki_name}
+                            value={form.data.display_name}
                             onChange={(event) => {
-                                const munkiName = event.target.value;
+                                const displayName = event.target.value;
 
                                 form.setData((data) => ({
                                     ...data,
-                                    munki_name: munkiName,
-                                    display_name:
-                                        data.display_name === '' || data.display_name === data.munki_name
-                                            ? munkiName
-                                            : data.display_name,
+                                    display_name: displayName,
+                                    munki_name: displayName,
                                 }));
                             }}
                             placeholder="Google Chrome"
                         />
                     </FormField>
-                    <FormField label={t('packages.displayName')} error={form.errors.display_name}>
-                        <S.Input
-                            value={form.data.display_name}
-                            onChange={(event) => form.setData('display_name', event.target.value)}
-                        />
+                    <FormField label={t('packages.category')} error={form.errors.category}>
+                        <S.Select
+                            value={form.data.category}
+                            onChange={(event) => form.setData('category', event.target.value as PackageCategory)}
+                        >
+                            {packageCategories.map((category) => (
+                                <option key={category} value={category}>
+                                    {t(`packages.category.${category}` as TranslationKey)}
+                                </option>
+                            ))}
+                        </S.Select>
                     </FormField>
+                    <S.Full>
+                        <FormField label={t('packages.descriptionField')} error={form.errors.description}>
+                            <S.Textarea
+                                value={form.data.description}
+                                onChange={(event) => form.setData('description', event.target.value)}
+                                placeholder={t('packages.descriptionPlaceholder')}
+                            />
+                        </FormField>
+                    </S.Full>
                     <FormField label={t('packages.bundleIdentifier')} error={form.errors.bundle_identifier}>
                         <S.Input
                             value={form.data.bundle_identifier}
@@ -532,19 +579,42 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             </S.IconButton>
                         </S.ModalHeader>
                         <S.Form onSubmit={submitEdit}>
-                            <FormField label={t('packages.munkiName')} error={editForm.errors.munki_name}>
-                                <S.Input
-                                    value={editForm.data.munki_name}
-                                    onChange={(event) => editForm.setData('munki_name', event.target.value)}
-                                    placeholder="Google Chrome"
-                                />
-                            </FormField>
                             <FormField label={t('packages.displayName')} error={editForm.errors.display_name}>
                                 <S.Input
                                     value={editForm.data.display_name}
-                                    onChange={(event) => editForm.setData('display_name', event.target.value)}
+                                    onChange={(event) => {
+                                        const displayName = event.target.value;
+
+                                        editForm.setData((data) => ({
+                                            ...data,
+                                            display_name: displayName,
+                                            munki_name: displayName,
+                                        }));
+                                    }}
+                                    placeholder="Google Chrome"
                                 />
                             </FormField>
+                            <FormField label={t('packages.category')} error={editForm.errors.category}>
+                                <S.Select
+                                    value={editForm.data.category}
+                                    onChange={(event) => editForm.setData('category', event.target.value as PackageCategory)}
+                                >
+                                    {packageCategories.map((category) => (
+                                        <option key={category} value={category}>
+                                            {t(`packages.category.${category}` as TranslationKey)}
+                                        </option>
+                                    ))}
+                                </S.Select>
+                            </FormField>
+                            <S.Full>
+                                <FormField label={t('packages.descriptionField')} error={editForm.errors.description}>
+                                    <S.Textarea
+                                        value={editForm.data.description}
+                                        onChange={(event) => editForm.setData('description', event.target.value)}
+                                        placeholder={t('packages.descriptionPlaceholder')}
+                                    />
+                                </FormField>
+                            </S.Full>
                             <FormField label={t('packages.bundleIdentifier')} error={editForm.errors.bundle_identifier}>
                                 <S.Input
                                     value={editForm.data.bundle_identifier}
@@ -742,6 +812,29 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                             />
                         </S.MatrixControls>
 
+                        {matrixMode === 'profiles' ? (
+                            <PaginationControls
+                                page={profileMatrixPagination.page}
+                                pageCount={profileMatrixPagination.pageCount}
+                                pageSize={profileMatrixPagination.pageSize}
+                                total={profileMatrixPagination.total}
+                                from={profileMatrixPagination.from}
+                                to={profileMatrixPagination.to}
+                                onPageChange={profileMatrixPagination.setPage}
+                                onPageSizeChange={profileMatrixPagination.setPageSize}
+                            />
+                        ) : (
+                            <PaginationControls
+                                page={packageMatrixPagination.page}
+                                pageCount={packageMatrixPagination.pageCount}
+                                pageSize={packageMatrixPagination.pageSize}
+                                total={packageMatrixPagination.total}
+                                from={packageMatrixPagination.from}
+                                to={packageMatrixPagination.to}
+                                onPageChange={packageMatrixPagination.setPage}
+                                onPageSizeChange={packageMatrixPagination.setPageSize}
+                            />
+                        )}
                         <S.TableCard>
                             <S.MatrixTable>
                                 {matrixMode === 'profiles' ? (
@@ -760,7 +853,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                                     <S.EmptyCell colSpan={4}>{t('packages.noProfileAssigned')}</S.EmptyCell>
                                                 </tr>
                                             ) : (
-                                                profileMatrixRows.map((row) => (
+                                                paginatedProfileMatrixRows.map((row) => (
                                                     <tr key={`${row.target.type}:${row.target.id}`}>
                                                         <td>
                                                             <S.TargetTitle>
@@ -810,7 +903,7 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                                     <S.EmptyCell colSpan={3}>{t('packages.noMatrixPackage')}</S.EmptyCell>
                                                 </tr>
                                             ) : (
-                                                packageMatrixRows.map((row) => (
+                                                paginatedPackageMatrixRows.map((row) => (
                                                     <tr key={row.package.id}>
                                                         <td>
                                                             <S.PackageTitle>
@@ -850,6 +943,29 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                 )}
                             </S.MatrixTable>
                         </S.TableCard>
+                        {matrixMode === 'profiles' ? (
+                            <PaginationControls
+                                page={profileMatrixPagination.page}
+                                pageCount={profileMatrixPagination.pageCount}
+                                pageSize={profileMatrixPagination.pageSize}
+                                total={profileMatrixPagination.total}
+                                from={profileMatrixPagination.from}
+                                to={profileMatrixPagination.to}
+                                onPageChange={profileMatrixPagination.setPage}
+                                onPageSizeChange={profileMatrixPagination.setPageSize}
+                            />
+                        ) : (
+                            <PaginationControls
+                                page={packageMatrixPagination.page}
+                                pageCount={packageMatrixPagination.pageCount}
+                                pageSize={packageMatrixPagination.pageSize}
+                                total={packageMatrixPagination.total}
+                                from={packageMatrixPagination.from}
+                                to={packageMatrixPagination.to}
+                                onPageChange={packageMatrixPagination.setPage}
+                                onPageSizeChange={packageMatrixPagination.setPageSize}
+                            />
+                        )}
                     </S.WideDialog>
                 </S.ModalOverlay>
             ) : null}
@@ -892,6 +1008,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                 </S.FilterControls>
             </S.FilterBar>
 
+            <PaginationControls
+                page={packagesPagination.page}
+                pageCount={packagesPagination.pageCount}
+                pageSize={packagesPagination.pageSize}
+                total={packagesPagination.total}
+                from={packagesPagination.from}
+                to={packagesPagination.to}
+                onPageChange={packagesPagination.setPage}
+                onPageSizeChange={packagesPagination.setPageSize}
+            />
             <S.TableCard>
                 <S.Table>
                     <thead>
@@ -912,11 +1038,6 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                 </S.SortButton>
                             </th>
                             <th>
-                                <S.SortButton type="button" onClick={() => changeSort('munki_name')}>
-                                    {t('packages.munkiName')}{sortIndicator('munki_name')}
-                                </S.SortButton>
-                            </th>
-                            <th>
                                 <S.SortButton type="button" onClick={() => changeSort('bundle_identifier')}>
                                     {t('packages.bundleIdentifier')}{sortIndicator('bundle_identifier')}
                                 </S.SortButton>
@@ -931,16 +1052,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                     {t('packages.source')}{sortIndicator('source')}
                                 </S.SortButton>
                             </th>
-                            <th>
+                            <S.CenterHeader>
                                 <S.SortButton type="button" onClick={() => changeSort('active')}>
                                     {t('packages.status')}{sortIndicator('active')}
                                 </S.SortButton>
-                            </th>
-                            <th>
+                            </S.CenterHeader>
+                            <S.CenterHeader>
                                 <S.SortButton type="button" onClick={() => changeSort('assignments_count')}>
                                     {t('packages.assignmentCount')}{sortIndicator('assignments_count')}
                                 </S.SortButton>
-                            </th>
+                            </S.CenterHeader>
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('hash')}>
                                     {t('packages.hashHeader')}{sortIndicator('hash')}
@@ -952,10 +1073,10 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                     <tbody>
                         {filteredPackages.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={canUpdatePackages ? 10 : 8}>{t('packages.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdatePackages ? 9 : 7}>{t('packages.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
-                            filteredPackages.map((pkg) => (
+                            paginatedPackages.map((pkg) => (
                                 <tr key={pkg.id}>
                                     {canUpdatePackages ? (
                                         <td>
@@ -975,9 +1096,6 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                             </S.PackageTitleText>
                                         </S.PackageTitle>
                                     </td>
-                                    <td>
-                                        <S.CodePill>{pkg.munki_name}</S.CodePill>
-                                    </td>
                                     <td>{pkg.bundle_identifier ? <S.CodePill>{pkg.bundle_identifier}</S.CodePill> : '-'}</td>
                                     <td>
                                         {pkg.version ? <S.VersionText>{pkg.version}</S.VersionText> : '-'}
@@ -987,12 +1105,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                                             {pkg.pkg_path ? t('packages.sourceUploaded') : t('packages.sourceRemote')}
                                         </S.SourceBadge>
                                     </td>
-                                    <td>
-                                        <S.StatusBadge $active={pkg.active}>
-                                            {pkg.active ? t('packages.activeStatus') : t('packages.inactiveStatus')}
+                                    <S.StatusCell>
+                                        <S.StatusBadge
+                                            $active={pkg.active}
+                                            aria-label={pkg.active ? t('packages.activeStatus') : t('packages.inactiveStatus')}
+                                            title={pkg.active ? t('packages.activeStatus') : t('packages.inactiveStatus')}
+                                        >
+                                            <span aria-hidden="true">{pkg.active ? '✓' : '×'}</span>
                                         </S.StatusBadge>
-                                    </td>
-                                    <td>{pkg.assignments_count ?? 0}</td>
+                                    </S.StatusCell>
+                                    <S.CountCell>{pkg.assignments_count ?? 0}</S.CountCell>
                                     <td>
                                         <S.HashText>{pkg.hash}</S.HashText>
                                     </td>
@@ -1025,6 +1147,16 @@ export default function PackagesManager({ packages }: PackagesManagerProps) {
                     </tbody>
                 </S.Table>
             </S.TableCard>
+            <PaginationControls
+                page={packagesPagination.page}
+                pageCount={packagesPagination.pageCount}
+                pageSize={packagesPagination.pageSize}
+                total={packagesPagination.total}
+                from={packagesPagination.from}
+                to={packagesPagination.to}
+                onPageChange={packagesPagination.setPage}
+                onPageSizeChange={packagesPagination.setPageSize}
+            />
             {canUpdatePackages ? <ConfirmModal
                 open={packageToDelete !== null}
                 title={t('packages.deleteTitle')}

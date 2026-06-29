@@ -33,6 +33,8 @@ export type Package = {
     id: number;
     munki_name: string;
     display_name: string;
+    category: string;
+    description: string | null;
     bundle_identifier: string | null;
     version: string | null;
     icon_path: string | null;

@@ -317,6 +317,20 @@ export const CodePill = styled.code`
   padding: 4px 8px;
 `;
 
+export const CenterHeader = styled.th`
+  text-align: center !important;
+
+  ${SortButton} {
+    justify-content: center;
+  }
+`;
+
+export const CountCell = styled.td`
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: center !important;
+`;
+
 export const NotesText = styled.span`
   color: #64748b;
   font-size: 12px;

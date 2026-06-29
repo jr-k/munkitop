@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
 import MobileconfigModal from '../MobileconfigModal';
+import PaginationControls, { usePagination } from '../Pagination';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
 import { can } from '../../permissions';
@@ -232,7 +233,9 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
         return sort.direction === 'asc' ? ' ↑' : ' ↓';
     }
 
-    const visibleGroupIds = filteredGroups.filter((group) => !group.is_system).map((group) => group.id);
+    const groupsPagination = usePagination(filteredGroups);
+    const paginatedGroups = groupsPagination.items;
+    const visibleGroupIds = paginatedGroups.filter((group) => !group.is_system).map((group) => group.id);
     const allVisibleGroupsSelected = visibleGroupIds.length > 0
         && visibleGroupIds.every((id) => selectedGroupIds.includes(id));
 
@@ -597,6 +600,16 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                 </S.FilterControls>
             </S.FilterBar>
 
+            <PaginationControls
+                page={groupsPagination.page}
+                pageCount={groupsPagination.pageCount}
+                pageSize={groupsPagination.pageSize}
+                total={groupsPagination.total}
+                from={groupsPagination.from}
+                to={groupsPagination.to}
+                onPageChange={groupsPagination.setPage}
+                onPageSizeChange={groupsPagination.setPageSize}
+            />
             <S.TableCard>
                 <S.Table>
                     <thead>
@@ -621,11 +634,11 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                     {t('groups.slug')}{sortIndicator('slug')}
                                 </S.SortButton>
                             </th>
-                            <th>
+                            <S.CenterHeader>
                                 <S.SortButton type="button" onClick={() => changeSort('people_count')}>
                                     {t('groups.peopleCount')}{sortIndicator('people_count')}
                                 </S.SortButton>
-                            </th>
+                            </S.CenterHeader>
                             <th>
                                 <S.SortButton type="button" onClick={() => changeSort('notes')}>
                                     {t('groups.notes')}{sortIndicator('notes')}
@@ -642,7 +655,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                 <S.EmptyCell colSpan={canUpdateGroups ? 8 : 6}>{t('groups.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
-                            filteredGroups.map((group) => (
+                            paginatedGroups.map((group) => (
                                 <tr key={group.id}>
                                     {canUpdateGroups ? (
                                         <td>
@@ -662,7 +675,7 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                                     <td>
                                         <S.CodePill>{group.slug}</S.CodePill>
                                     </td>
-                                    <td>{group.people_count ?? 0}</td>
+                                    <S.CountCell>{group.people_count ?? 0}</S.CountCell>
                                     <td>
                                         <S.NotesText>{group.notes ?? '-'}</S.NotesText>
                                     </td>
@@ -723,6 +736,16 @@ export default function GroupsManager({ groups, people }: GroupsManagerProps) {
                     </tbody>
                 </S.Table>
             </S.TableCard>
+            <PaginationControls
+                page={groupsPagination.page}
+                pageCount={groupsPagination.pageCount}
+                pageSize={groupsPagination.pageSize}
+                total={groupsPagination.total}
+                from={groupsPagination.from}
+                to={groupsPagination.to}
+                onPageChange={groupsPagination.setPage}
+                onPageSizeChange={groupsPagination.setPageSize}
+            />
             {manifestToView ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {

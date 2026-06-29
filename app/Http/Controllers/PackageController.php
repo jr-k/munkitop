@@ -17,6 +17,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PackageController extends Controller
 {
+    private const CATEGORIES = [
+        'browsers',
+        'developer_tools',
+        'security',
+        'productivity',
+        'communication',
+        'internal',
+        'utilities',
+        'media',
+        'system',
+    ];
+
     public function index(Request $request): Response
     {
         return Inertia::render('Packages', [
@@ -29,6 +41,8 @@ class PackageController extends Controller
                     'id' => $package->id,
                     'munki_name' => $package->munki_name,
                     'display_name' => $package->display_name,
+                    'category' => $package->category,
+                    'description' => $package->description,
                     'bundle_identifier' => $package->bundle_identifier,
                     'version' => $package->version,
                     'icon_path' => $package->icon_path,
@@ -67,6 +81,8 @@ class PackageController extends Controller
                 $package->id,
                 $package->munki_name,
                 $package->display_name,
+                $package->category,
+                $package->description,
                 $package->bundle_identifier,
                 $package->version,
                 $package->pkg_path ? 'upload' : 'url',
@@ -82,6 +98,8 @@ class PackageController extends Controller
             'id',
             'munki_name',
             'display_name',
+            'category',
+            'description',
             'bundle_identifier',
             'version',
             'source',
@@ -168,6 +186,8 @@ class PackageController extends Controller
                 Rule::unique('packages', 'munki_name')->ignore($package),
             ],
             'display_name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', Rule::in(self::CATEGORIES)],
+            'description' => ['nullable', 'string', 'max:2000'],
             'bundle_identifier' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9.-]+$/'],
             'version' => ['nullable', 'string', 'max:255'],
             'icon' => ['nullable', 'file', 'max:4096'],

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
 import MobileconfigModal from '../MobileconfigModal';
+import PaginationControls, { usePagination } from '../Pagination';
 import TableIcon from '../TableIcon';
 import { useI18n } from '../../i18n';
 import { can } from '../../permissions';
@@ -15,7 +16,7 @@ type PeopleManagerProps = {
 };
 
 type SortDirection = 'asc' | 'desc';
-type PeopleSortKey = 'name' | 'first_name' | 'email' | 'client_identifier' | 'groups';
+type PeopleSortKey = 'name' | 'first_name' | 'client_identifier' | 'groups';
 
 export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const { t } = useI18n();
@@ -36,7 +37,7 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
     const [personToEdit, setPersonToEdit] = useState<Person | null>(null);
     const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
     const [sort, setSort] = useState<{ key: PeopleSortKey; direction: SortDirection }>({
-        key: 'email',
+        key: 'name',
         direction: 'asc',
     });
     const [selectedPersonIds, setSelectedPersonIds] = useState<number[]>([]);
@@ -146,7 +147,9 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
         return sort.direction === 'asc' ? ' ↑' : ' ↓';
     }
 
-    const visiblePersonIds = visiblePeople.map((person) => person.id);
+    const peoplePagination = usePagination(visiblePeople);
+    const paginatedPeople = peoplePagination.items;
+    const visiblePersonIds = paginatedPeople.map((person) => person.id);
     const allVisiblePeopleSelected = visiblePersonIds.length > 0
         && visiblePersonIds.every((id) => selectedPersonIds.includes(id));
 
@@ -508,6 +511,16 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                 </S.FilterControls>
             </S.FilterBar>
 
+            <PaginationControls
+                page={peoplePagination.page}
+                pageCount={peoplePagination.pageCount}
+                pageSize={peoplePagination.pageSize}
+                total={peoplePagination.total}
+                from={peoplePagination.from}
+                to={peoplePagination.to}
+                onPageChange={peoplePagination.setPage}
+                onPageSizeChange={peoplePagination.setPageSize}
+            />
             <S.TableCard>
                 <S.Table>
                     <thead>
@@ -533,13 +546,8 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                 </S.SortButton>
                             </th>
                             <th>
-                                <S.SortButton type="button" onClick={() => changeSort('email')}>
-                                    Email{sortIndicator('email')}
-                                </S.SortButton>
-                            </th>
-                            <th>
                                 <S.SortButton type="button" onClick={() => changeSort('client_identifier')}>
-                                    ClientIdentifier{sortIndicator('client_identifier')}
+                                    Client ID{sortIndicator('client_identifier')}
                                 </S.SortButton>
                             </th>
                             <th>
@@ -555,10 +563,10 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     <tbody>
                         {visiblePeople.length === 0 ? (
                             <tr>
-                                <S.EmptyCell colSpan={canUpdatePeople ? 9 : 7}>{t('people.noMatch')}</S.EmptyCell>
+                                <S.EmptyCell colSpan={canUpdatePeople ? 8 : 6}>{t('people.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
-                            visiblePeople.map((person) => (
+                            paginatedPeople.map((person) => (
                                 <tr key={person.id}>
                                     {canUpdatePeople ? (
                                         <td>
@@ -574,7 +582,6 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                                         <S.PrimaryCell>{person.name}</S.PrimaryCell>
                                     </td>
                                     <td>{person.first_name ?? '-'}</td>
-                                    <td>{person.email}</td>
                                     <td>
                                         <S.CodePill>{person.client_identifier}</S.CodePill>
                                     </td>
@@ -634,6 +641,16 @@ export default function PeopleManager({ people, groups }: PeopleManagerProps) {
                     </tbody>
                 </S.Table>
             </S.TableCard>
+            <PaginationControls
+                page={peoplePagination.page}
+                pageCount={peoplePagination.pageCount}
+                pageSize={peoplePagination.pageSize}
+                total={peoplePagination.total}
+                from={peoplePagination.from}
+                to={peoplePagination.to}
+                onPageChange={peoplePagination.setPage}
+                onPageSizeChange={peoplePagination.setPageSize}
+            />
             {manifestToView ? (
                 <S.ModalOverlay
                     onMouseDown={(event) => {

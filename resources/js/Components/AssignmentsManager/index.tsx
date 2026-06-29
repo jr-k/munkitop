@@ -2,6 +2,7 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import PaginationControls, { usePagination } from '../Pagination';
 import PackageIcon from '../PackageIcon';
 import TableIcon from '../TableIcon';
 import TargetIcon from '../TargetIcon';
@@ -212,7 +213,9 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         return sort.direction === 'asc' ? ' ↑' : ' ↓';
     }
 
-    const visibleAssignmentIds = filteredAssignments.map((assignment) => assignment.id);
+    const assignmentsPagination = usePagination(filteredAssignments);
+    const paginatedAssignments = assignmentsPagination.items;
+    const visibleAssignmentIds = paginatedAssignments.map((assignment) => assignment.id);
     const allVisibleAssignmentsSelected = visibleAssignmentIds.length > 0
         && visibleAssignmentIds.every((id) => selectedAssignmentIds.includes(id));
 
@@ -588,6 +591,16 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 </S.FilterControls>
             </S.FilterBar>
 
+            <PaginationControls
+                page={assignmentsPagination.page}
+                pageCount={assignmentsPagination.pageCount}
+                pageSize={assignmentsPagination.pageSize}
+                total={assignmentsPagination.total}
+                from={assignmentsPagination.from}
+                to={assignmentsPagination.to}
+                onPageChange={assignmentsPagination.setPage}
+                onPageSizeChange={assignmentsPagination.setPageSize}
+            />
             <S.TableCard>
                 <S.Table>
                     <thead>
@@ -631,7 +644,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 <S.EmptyCell colSpan={canUpdateAssignments ? 6 : 4}>{t('assignments.noMatch')}</S.EmptyCell>
                             </tr>
                         ) : (
-                            filteredAssignments.map((assignment) => (
+                            paginatedAssignments.map((assignment) => (
                                 <tr key={assignment.id}>
                                     {canUpdateAssignments ? (
                                         <td>
@@ -680,6 +693,16 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                     </tbody>
                 </S.Table>
             </S.TableCard>
+            <PaginationControls
+                page={assignmentsPagination.page}
+                pageCount={assignmentsPagination.pageCount}
+                pageSize={assignmentsPagination.pageSize}
+                total={assignmentsPagination.total}
+                from={assignmentsPagination.from}
+                to={assignmentsPagination.to}
+                onPageChange={assignmentsPagination.setPage}
+                onPageSizeChange={assignmentsPagination.setPageSize}
+            />
             {canUpdateAssignments ? <ConfirmModal
                 open={assignmentToDelete !== null}
                 title={t('assignments.deleteTitle')}

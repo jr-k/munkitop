@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../../Components/AppLayout';
 import ConfirmModal from '../../Components/ConfirmModal';
 import FlashMessage from '../../Components/FlashMessage';
+import PaginationControls, { usePagination } from '../../Components/Pagination';
 import TableIcon from '../../Components/TableIcon';
 import TargetIcon from '../../Components/TargetIcon';
 import { useI18n } from '../../i18n';
@@ -151,7 +152,9 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
         return sort.direction === 'asc' ? ' ↑' : ' ↓';
     }
 
-    const visibleShareIds = filteredShares.map((share) => share.id);
+    const sharesPagination = usePagination(filteredShares);
+    const paginatedShares = sharesPagination.items;
+    const visibleShareIds = paginatedShares.map((share) => share.id);
     const allVisibleSharesSelected = visibleShareIds.length > 0
         && visibleShareIds.every((id) => selectedShareIds.includes(id));
 
@@ -441,6 +444,16 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                         </S.FilterControls>
                     </S.FilterBar>
 
+                    <PaginationControls
+                        page={sharesPagination.page}
+                        pageCount={sharesPagination.pageCount}
+                        pageSize={sharesPagination.pageSize}
+                        total={sharesPagination.total}
+                        from={sharesPagination.from}
+                        to={sharesPagination.to}
+                        onPageChange={sharesPagination.setPage}
+                        onPageSizeChange={sharesPagination.setPageSize}
+                    />
                     <S.TableCard>
                         <S.Table>
                             <thead>
@@ -499,7 +512,7 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                                         <S.EmptyCell colSpan={canUpdateLinks ? 9 : 7}>{t('shares.noMatch')}</S.EmptyCell>
                                     </tr>
                                 ) : (
-                                    filteredShares.map((share) => (
+                                    paginatedShares.map((share) => (
                                         <tr key={share.id}>
                                             {canUpdateLinks ? (
                                                 <td>
@@ -603,6 +616,16 @@ export default function Shares({ shares, people, groups }: SharesPageProps) {
                             </tbody>
                         </S.Table>
                     </S.TableCard>
+                    <PaginationControls
+                        page={sharesPagination.page}
+                        pageCount={sharesPagination.pageCount}
+                        pageSize={sharesPagination.pageSize}
+                        total={sharesPagination.total}
+                        from={sharesPagination.from}
+                        to={sharesPagination.to}
+                        onPageChange={sharesPagination.setPage}
+                        onPageSizeChange={sharesPagination.setPageSize}
+                    />
                 </S.Container>
 
                 {canUpdateLinks && shareToEdit ? (

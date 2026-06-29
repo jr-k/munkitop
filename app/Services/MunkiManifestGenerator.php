@@ -145,6 +145,7 @@ class MunkiManifestGenerator
         $pkginfo = [
             'name' => $package->munki_name,
             'display_name' => $package->display_name,
+            'category' => $this->categoryLabel($package->category),
             'installer_item_location' => $installerItemLocation,
             'installer_item_hash' => $package->hash,
             'unattended_install' => true,
@@ -300,6 +301,21 @@ class MunkiManifestGenerator
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
         return $extension === 'dmg' ? 'dmg' : 'pkg';
+    }
+
+    private function categoryLabel(?string $category): string
+    {
+        return [
+            'browsers' => 'Browsers',
+            'developer_tools' => 'Developer Tools',
+            'security' => 'Security',
+            'productivity' => 'Productivity',
+            'communication' => 'Communication',
+            'internal' => 'Internal',
+            'utilities' => 'Utilities',
+            'media' => 'Media',
+            'system' => 'System',
+        ][$category ?? 'utilities'] ?? 'Utilities';
     }
 
     private function appBundleName(Package $package): string

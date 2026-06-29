@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import FormField from '../FormField';
+import PaginationControls, { usePagination } from '../Pagination';
 import TableIcon from '../TableIcon';
 import { TranslationKey, useI18n } from '../../i18n';
 import { ManagedUser, PermissionAction, PermissionResource, UserRole } from '../../types';
@@ -38,6 +39,8 @@ export default function UsersManager({ users, permissionResources, permissionAct
     const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
     const form = useForm<UserFormData>(emptyForm);
     const editForm = useForm<UserFormData>(emptyForm);
+    const usersPagination = usePagination(users);
+    const paginatedUsers = usersPagination.items;
 
     function openEdit(user: ManagedUser) {
         setUserToEdit(user);
@@ -144,6 +147,16 @@ export default function UsersManager({ users, permissionResources, permissionAct
                 </S.Button>
             </S.Toolbar>
 
+            <PaginationControls
+                page={usersPagination.page}
+                pageCount={usersPagination.pageCount}
+                pageSize={usersPagination.pageSize}
+                total={usersPagination.total}
+                from={usersPagination.from}
+                to={usersPagination.to}
+                onPageChange={usersPagination.setPage}
+                onPageSizeChange={usersPagination.setPageSize}
+            />
             <S.TableCard>
                 <S.Table>
                     <thead>
@@ -155,7 +168,7 @@ export default function UsersManager({ users, permissionResources, permissionAct
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((user) => (
+                        {paginatedUsers.map((user) => (
                             <tr key={user.id}>
                                 <S.Td>
                                     <strong>{user.name}</strong>
@@ -206,6 +219,16 @@ export default function UsersManager({ users, permissionResources, permissionAct
                     </tbody>
                 </S.Table>
             </S.TableCard>
+            <PaginationControls
+                page={usersPagination.page}
+                pageCount={usersPagination.pageCount}
+                pageSize={usersPagination.pageSize}
+                total={usersPagination.total}
+                from={usersPagination.from}
+                to={usersPagination.to}
+                onPageChange={usersPagination.setPage}
+                onPageSizeChange={usersPagination.setPageSize}
+            />
 
             {createOpen ? (
                 <UserDialog

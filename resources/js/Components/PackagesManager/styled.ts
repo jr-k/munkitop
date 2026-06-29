@@ -119,13 +119,30 @@ export const FilterSelect = styled.select`
 export const Input = styled.input`
   border: 1px solid #cbd5e1;
   border-radius: 12px;
+  box-sizing: border-box;
+  min-width: 0;
   padding: 11px 12px;
+  width: 100%;
 `;
 
 export const Select = styled.select`
   border: 1px solid #cbd5e1;
   border-radius: 12px;
+  box-sizing: border-box;
+  min-width: 0;
   padding: 11px 12px;
+  width: 100%;
+`;
+
+export const Textarea = styled.textarea`
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-sizing: border-box;
+  min-height: 92px;
+  min-width: 0;
+  padding: 11px 12px;
+  resize: vertical;
+  width: 100%;
 `;
 
 export const FieldWithActions = styled.div`
@@ -133,6 +150,7 @@ export const FieldWithActions = styled.div`
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
 `;
 
 export const FieldActions = styled.div`
@@ -388,13 +406,36 @@ export const CodePill = styled.code`
   padding: 4px 8px;
 `;
 
+export const CenterHeader = styled.th`
+  text-align: center !important;
+
+  ${SortButton} {
+    justify-content: center;
+  }
+`;
+
+export const StatusCell = styled.td`
+  text-align: center !important;
+`;
+
+export const CountCell = styled.td`
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: center !important;
+`;
+
 export const StatusBadge = styled.span<{ $active: boolean }>`
+  align-items: center;
   background: ${({ $active }) => ($active ? '#dcfce7' : '#fee2e2')};
   border-radius: 999px;
   color: ${({ $active }) => ($active ? '#166534' : '#991b1b')};
+  display: inline-flex;
   font-size: 12px;
   font-weight: 800;
-  padding: 4px 8px;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  width: 24px;
 `;
 
 export const VersionText = styled.span`
