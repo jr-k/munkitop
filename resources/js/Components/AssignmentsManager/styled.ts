@@ -156,7 +156,17 @@ export const ActionChoice = styled.div`
 
 export const ActionChoiceButton = styled.button<{ $active: boolean; $action: 'install' | 'uninstall' }>`
   background: ${({ $active }) => ($active ? '#ffffff' : 'transparent')};
-  border: 0;
+  border: 1px solid ${({ $action }) => {
+    if ($action === 'install') {
+      return '#86efac';
+    }
+
+    if ($action === 'uninstall') {
+      return '#fecaca';
+    }
+
+    return '#cbd5e1';
+  }};
   border-radius: 10px;
   box-shadow: ${({ $active }) => ($active ? '0 6px 16px rgb(15 23 42 / 10%)' : 'none')};
   color: ${({ $active, $action }) => {
@@ -578,6 +588,31 @@ export const MatrixControls = styled.div`
   }
 `;
 
+export const MatrixSwitchGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+`;
+
+export const MatrixSwitch = styled.label`
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 8px;
+  padding: 8px 12px;
+  white-space: nowrap;
+
+  input {
+    accent-color: #7c3aed;
+  }
+`;
+
 export const MatrixScroll = styled.div`
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -637,13 +672,6 @@ export const MatrixPackageTitle = styled.span`
   line-height: 1.2;
 `;
 
-export const MatrixPackageMunkiName = styled.code`
-  color: #64748b;
-  display: block;
-  font-size: 12px;
-  margin-top: 6px;
-`;
-
 export const MatrixRowHeader = styled.th`
   background: #ffffff;
   left: 0;
@@ -662,7 +690,7 @@ export const MatrixRowMeta = styled.span`
   margin-top: 3px;
 `;
 
-export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | 'inherited'; $disabled: boolean }>`
+export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | 'inherited'; $disabled: boolean; $inherited: boolean }>`
   background: ${({ $action }) => {
     if ($action === 'install') {
       return '#f0fdf4';
@@ -689,7 +717,19 @@ export const MatrixCell = styled.td<{ $action: '-' | 'install' | 'uninstall' | '
 
     return '#475569';
   }};
+  box-shadow: ${({ $inherited }) => ($inherited ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.5)' : 'none')};
+  min-width: 180px;
   opacity: ${({ $disabled }) => ($disabled ? 0.82 : 1)};
+  width: 180px;
+`;
+
+export const MatrixEmptyPackageCell = styled.td`
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 260px;
+  padding: 18px !important;
+  text-align: center;
 `;
 
 export const MatrixCellStatus = styled.div`
@@ -704,21 +744,8 @@ export const MatrixCellStatus = styled.div`
   width: 100%;
 `;
 
-export const MatrixCellActions = styled.div`
-  align-items: stretch;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: 34px 1fr 1fr;
-  min-height: 58px;
-  padding: 6px;
-`;
-
-export const MatrixCellActionButton = styled.button<{ $active: boolean; $action: '-' | 'install' | 'uninstall' }>`
-  background: ${({ $active, $action }) => {
-    if (!$active) {
-      return '#ffffff';
-    }
-
+export const MatrixCellSelect = styled.select<{ $action: '-' | 'install' | 'uninstall' }>`
+  background: ${({ $action }) => {
     if ($action === 'install') {
       return '#dcfce7';
     }
@@ -729,11 +756,7 @@ export const MatrixCellActionButton = styled.button<{ $active: boolean; $action:
 
     return '#e2e8f0';
   }};
-  border: 1px solid ${({ $active, $action }) => {
-    if (!$active) {
-      return '#e2e8f0';
-    }
-
+  border: 1px solid ${({ $action }) => {
     if ($action === 'install') {
       return '#86efac';
     }
@@ -745,11 +768,7 @@ export const MatrixCellActionButton = styled.button<{ $active: boolean; $action:
     return '#cbd5e1';
   }};
   border-radius: 9px;
-  color: ${({ $active, $action }) => {
-    if (!$active) {
-      return '#475569';
-    }
-
+  color: ${({ $action }) => {
     if ($action === 'install') {
       return '#166534';
     }
@@ -760,9 +779,15 @@ export const MatrixCellActionButton = styled.button<{ $active: boolean; $action:
 
     return '#334155';
   }};
-  font-size: 11px;
+  display: block;
+  font-size: 12px;
   font-weight: 900;
-  padding: 0 6px;
+  margin: 6px;
+  min-height: 42px;
+  padding: 0 10px;
+  text-align: center;
+  text-align-last: center;
+  width: calc(100% - 12px);
 
   &:disabled {
     cursor: not-allowed;
@@ -774,8 +799,13 @@ export const MatrixCellActionButton = styled.button<{ $active: boolean; $action:
 `;
 
 export const MatrixInheritedLabel = styled.span`
-  color: #64748b;
+  background: rgb(0 0 0 / 70%);
+  color: #fff;
+  display: block;
   font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
+  padding: 5px 6px;
+  text-align: center;
+  width: 100%;
 `;

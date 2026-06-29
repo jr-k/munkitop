@@ -58,6 +58,9 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const [createOpen, setCreateOpen] = useState(false);
     const [matrixOpen, setMatrixOpen] = useState(false);
     const [matrixSearch, setMatrixSearch] = useState('');
+    const [matrixPackageSearch, setMatrixPackageSearch] = useState('');
+    const [matrixUnassignedOnly, setMatrixUnassignedOnly] = useState(false);
+    const [matrixRowsWithRulesOnly, setMatrixRowsWithRulesOnly] = useState(false);
     const [savingMatrixCell, setSavingMatrixCell] = useState<string | null>(null);
     const [packageDropdownOpen, setPackageDropdownOpen] = useState(false);
     const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
@@ -153,6 +156,31 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
             return lookup;
         }, {});
     }, [assignments]);
+    const matrixPackages = useMemo(() => {
+        const assignedPackageIds = new Set(
+            assignments
+                .map((assignment) => assignment.package.id)
+                .filter((packageId): packageId is number => packageId !== null),
+        );
+        const normalizedSearch = matrixPackageSearch.trim().toLowerCase();
+
+        return packages.filter((pkg) => {
+            if (matrixUnassignedOnly && assignedPackageIds.has(pkg.id)) {
+                return false;
+            }
+
+            if (!normalizedSearch) {
+                return true;
+            }
+
+            return [
+                pkg.display_name,
+                pkg.munki_name,
+                pkg.bundle_identifier ?? '',
+                pkg.category ?? '',
+            ].join(' ').toLowerCase().includes(normalizedSearch);
+        });
+    }, [assignments, matrixPackageSearch, matrixUnassignedOnly, packages]);
     const matrixRows = useMemo(() => {
         const defaultGroup = groups.find((group) => isDefaultGroup(group));
         const optionalGroups = groups
@@ -187,20 +215,28 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     const filteredMatrixRows = useMemo(() => {
         const normalizedSearch = matrixSearch.trim().toLowerCase();
 
-        if (!normalizedSearch) {
-            return matrixRows;
-        }
-
         return matrixRows.filter((row) => {
-            const searchable = [
-                row.name,
-                row.identifier,
-                row.type === 'group' ? t('common.group') : t('common.person'),
-            ].join(' ').toLowerCase();
+            if (normalizedSearch) {
+                const searchable = [
+                    row.name,
+                    row.identifier,
+                    row.type === 'group' ? t('common.group') : t('common.person'),
+                ].join(' ').toLowerCase();
 
-            return searchable.includes(normalizedSearch);
+                if (!searchable.includes(normalizedSearch)) {
+                    return false;
+                }
+            }
+
+            if (!matrixRowsWithRulesOnly) {
+                return true;
+            }
+
+            return matrixPackages.some((pkg) =>
+                assignmentByMatrixCell[matrixCellKey(row.type, row.id, pkg.id)] !== undefined,
+            );
         });
-    }, [matrixRows, matrixSearch, t]);
+    }, [assignmentByMatrixCell, matrixPackages, matrixRows, matrixRowsWithRulesOnly, matrixSearch, t]);
 
     function togglePackage(packageId: string) {
         form.setData(
@@ -236,14 +272,17 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
         setTargetFilterSearch('');
     }
 
-    function inheritedInstallSource(row: MatrixTargetRow, pkg: Package) {
+    function inheritedRule(row: MatrixTargetRow, pkg: Package) {
         const defaultRow = matrixRows.find((matrixRow) => matrixRow.isDefault);
         const defaultAssignment = defaultRow
             ? assignmentByMatrixCell[matrixCellKey('group', defaultRow.id, pkg.id)]
             : null;
 
-        if (defaultRow && row.key !== defaultRow.key && defaultAssignment?.action === 'install') {
-            return defaultRow.name;
+        if (defaultRow && row.key !== defaultRow.key && defaultAssignment) {
+            return {
+                action: defaultAssignment.action,
+                source: defaultRow.name,
+            };
         }
 
         if (row.type !== 'person') {
@@ -255,23 +294,34 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                 return false;
             }
 
-            return assignmentByMatrixCell[matrixCellKey('group', matrixRow.id, pkg.id)]?.action === 'install';
+            return assignmentByMatrixCell[matrixCellKey('group', matrixRow.id, pkg.id)] !== undefined;
         });
 
-        return inheritedGroup?.name ?? null;
+        if (!inheritedGroup) {
+            return null;
+        }
+
+        const inheritedAssignment = assignmentByMatrixCell[matrixCellKey('group', inheritedGroup.id, pkg.id)];
+
+        return inheritedAssignment
+            ? {
+                action: inheritedAssignment.action,
+                source: inheritedGroup.name,
+            }
+            : null;
     }
 
     function matrixCellState(row: MatrixTargetRow, pkg: Package) {
         const cellKey = matrixCellKey(row.type, row.id, pkg.id);
         const directAssignment = assignmentByMatrixCell[cellKey] ?? null;
-        const inheritedSource = directAssignment ? null : inheritedInstallSource(row, pkg);
+        const inherited = directAssignment ? null : inheritedRule(row, pkg);
 
         return {
             cellKey,
             directAssignment,
-            inheritedSource,
+            inherited,
             action: (directAssignment?.action ?? '-') as MatrixAction,
-            disabled: inheritedSource !== null || savingMatrixCell === cellKey || !canUpdateAssignments,
+            disabled: savingMatrixCell === cellKey || !canUpdateAssignments,
             saving: savingMatrixCell === cellKey,
         };
     }
@@ -279,7 +329,11 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
     function updateMatrixCell(row: MatrixTargetRow, pkg: Package, nextAction: MatrixAction) {
         const cell = matrixCellState(row, pkg);
 
-        if (cell.disabled || cell.action === nextAction) {
+        if (
+            cell.disabled
+            || cell.action === nextAction
+            || (!cell.directAssignment && cell.inherited?.action === nextAction)
+        ) {
             return;
         }
 
@@ -711,6 +765,29 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 onChange={(event) => setMatrixSearch(event.target.value)}
                                 placeholder={t('assignments.matrixSearch')}
                             />
+                            <S.FilterInput
+                                value={matrixPackageSearch}
+                                onChange={(event) => setMatrixPackageSearch(event.target.value)}
+                                placeholder={t('assignments.matrixPackageSearch')}
+                            />
+                            <S.MatrixSwitchGroup>
+                                <S.MatrixSwitch>
+                                    <input
+                                        type="checkbox"
+                                        checked={matrixUnassignedOnly}
+                                        onChange={(event) => setMatrixUnassignedOnly(event.target.checked)}
+                                    />
+                                    <span>{t('assignments.matrixUnassignedOnly')}</span>
+                                </S.MatrixSwitch>
+                                <S.MatrixSwitch>
+                                    <input
+                                        type="checkbox"
+                                        checked={matrixRowsWithRulesOnly}
+                                        onChange={(event) => setMatrixRowsWithRulesOnly(event.target.checked)}
+                                    />
+                                    <span>{t('assignments.matrixRowsWithRulesOnly')}</span>
+                                </S.MatrixSwitch>
+                            </S.MatrixSwitchGroup>
                         </S.MatrixControls>
 
                         <S.MatrixScroll>
@@ -718,13 +795,12 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 <thead>
                                     <tr>
                                         <S.MatrixCornerHeader>{t('assignments.matrixTarget')}</S.MatrixCornerHeader>
-                                        {packages.map((pkg) => (
+                                        {matrixPackages.map((pkg) => (
                                             <S.MatrixPackageHeader key={pkg.id}>
                                                 <S.MatrixPackageTitle>
                                                     <PackageIcon iconUrl={pkg.icon_url} name={pkg.display_name} size="sm" />
                                                     <span>{pkg.display_name}</span>
                                                 </S.MatrixPackageTitle>
-                                                <S.MatrixPackageMunkiName>{pkg.munki_name}</S.MatrixPackageMunkiName>
                                             </S.MatrixPackageHeader>
                                         ))}
                                     </tr>
@@ -732,7 +808,7 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                 <tbody>
                                     {filteredMatrixRows.length === 0 ? (
                                         <tr>
-                                            <S.EmptyCell colSpan={packages.length + 1}>{t('assignments.matrixNoTarget')}</S.EmptyCell>
+                                            <S.EmptyCell colSpan={matrixPackages.length + 1}>{t('assignments.matrixNoTarget')}</S.EmptyCell>
                                         </tr>
                                     ) : (
                                         filteredMatrixRows.map((row) => (
@@ -749,13 +825,24 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                                         </span>
                                                     </S.TargetTitle>
                                                 </S.MatrixRowHeader>
-                                                {packages.map((pkg) => {
+                                                {matrixPackages.length === 0 ? (
+                                                    <S.MatrixEmptyPackageCell>
+                                                        {t('assignments.matrixNoUnassignedPackage')}
+                                                    </S.MatrixEmptyPackageCell>
+                                                ) : null}
+                                                {matrixPackages.map((pkg) => {
                                                     const cell = matrixCellState(row, pkg);
                                                     const actionLabel = cell.action === '-'
                                                         ? '-'
                                                         : (cell.action === 'install' ? t('assignments.install') : t('assignments.uninstall'));
-                                                    const cellTitle = cell.inheritedSource
-                                                        ? t('assignments.matrixInheritedFrom', { target: cell.inheritedSource })
+                                                    const inheritedActionLabel = cell.inherited?.action === 'uninstall'
+                                                        ? t('assignments.uninstall')
+                                                        : t('assignments.install');
+                                                    const effectiveAction = cell.directAssignment
+                                                        ? cell.action
+                                                        : (cell.inherited?.action ?? cell.action);
+                                                    const cellTitle = cell.inherited
+                                                        ? `${inheritedActionLabel} · ${t('assignments.matrixInheritedFrom', { target: cell.inherited.source })}`
                                                         : t('assignments.matrixCellTitle', {
                                                             target: row.name,
                                                             package: pkg.display_name,
@@ -765,49 +852,34 @@ export default function AssignmentsManager({ assignments, groups, packages, peop
                                                     return (
                                                         <S.MatrixCell
                                                             key={pkg.id}
-                                                            $action={cell.inheritedSource ? 'inherited' : cell.action}
+                                                            $action={cell.inherited?.action ?? cell.action}
                                                             $disabled={cell.disabled}
+                                                            $inherited={cell.inherited !== null}
                                                         >
-                                                            {cell.saving || cell.inheritedSource ? (
+                                                            {cell.saving ? (
                                                                 <S.MatrixCellStatus title={cellTitle}>
-                                                                    <span>{cell.saving ? '…' : t('assignments.matrixInheritedShort')}</span>
-                                                                    {cell.inheritedSource ? (
-                                                                        <S.MatrixInheritedLabel>
-                                                                            {t('assignments.matrixInheritedFrom', { target: cell.inheritedSource })}
-                                                                        </S.MatrixInheritedLabel>
-                                                                    ) : null}
+                                                                    <span>…</span>
                                                                 </S.MatrixCellStatus>
                                                             ) : (
-                                                                <S.MatrixCellActions>
-                                                                    {(['-', 'install', 'uninstall'] as const).map((nextAction) => {
-                                                                        const nextActionLabel = nextAction === '-'
-                                                                            ? '-'
-                                                                            : (nextAction === 'install' ? t('assignments.install') : t('assignments.uninstall'));
-
-                                                                        return (
-                                                                            <S.MatrixCellActionButton
-                                                                                key={nextAction}
-                                                                                type="button"
-                                                                                $active={cell.action === nextAction}
-                                                                                $action={nextAction}
-                                                                                disabled={cell.disabled}
-                                                                                aria-label={t('assignments.matrixCellTitle', {
-                                                                                    target: row.name,
-                                                                                    package: pkg.display_name,
-                                                                                    action: nextActionLabel,
-                                                                                })}
-                                                                                title={t('assignments.matrixCellTitle', {
-                                                                                    target: row.name,
-                                                                                    package: pkg.display_name,
-                                                                                    action: nextActionLabel,
-                                                                                })}
-                                                                                onClick={() => updateMatrixCell(row, pkg, nextAction)}
-                                                                            >
-                                                                                {nextActionLabel}
-                                                                            </S.MatrixCellActionButton>
-                                                                        );
-                                                                    })}
-                                                                </S.MatrixCellActions>
+                                                                <>
+                                                                    <S.MatrixCellSelect
+                                                                        value={effectiveAction}
+                                                                        $action={effectiveAction}
+                                                                        disabled={cell.disabled}
+                                                                        aria-label={cellTitle}
+                                                                        title={cellTitle}
+                                                                        onChange={(event) => updateMatrixCell(row, pkg, event.target.value as MatrixAction)}
+                                                                    >
+                                                                        <option value="-">-</option>
+                                                                        <option value="install">{t('assignments.install')}</option>
+                                                                        <option value="uninstall">{t('assignments.uninstall')}</option>
+                                                                    </S.MatrixCellSelect>
+                                                                    {cell.inherited ? (
+                                                                        <S.MatrixInheritedLabel>
+                                                                            {t('assignments.matrixInheritedFrom', { target: cell.inherited.source })}
+                                                                        </S.MatrixInheritedLabel>
+                                                                    ) : null}
+                                                                </>
                                                             )}
                                                         </S.MatrixCell>
                                                     );
