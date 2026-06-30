@@ -1,4 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
+import FlashMessage from '../../Components/FlashMessage';
 import FormField from '../../Components/FormField';
 import LogoMark from '../../Components/LogoMark';
 import { useI18n } from '../../i18n';
@@ -28,6 +29,8 @@ export default function Login() {
                     <S.Title>{displayName}</S.Title>
                 </S.Brand>
                 <S.Help>{t('login.help')}</S.Help>
+                <FlashMessage message={props.flash.success} tone="success" />
+                <FlashMessage message={props.flash.error} tone="error" />
                 <FormField label="Email" error={form.errors.email}>
                     <S.Input
                         type="email"
@@ -45,6 +48,9 @@ export default function Login() {
                 <S.Button type="submit" disabled={form.processing}>
                     {t('login.submit')}
                 </S.Button>
+                <S.LinkRow>
+                    <S.TextLink href="/forgot-password">{t('login.forgotPassword')}</S.TextLink>
+                </S.LinkRow>
             </S.Panel>
         </S.LoginContainer>
     );

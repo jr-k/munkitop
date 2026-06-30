@@ -57,3 +57,18 @@ export const Button = styled.button`
   font-weight: 800;
   padding: 12px 16px;
 `;
+
+export const LinkRow = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
+export const TextLink = styled.a`
+  color: #2563eb;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
