@@ -7,6 +7,11 @@ Munkitop is a small web console for building and publishing a Munki repository w
   <img src="docs/screen2.png" alt="Munkitop management view" width="49%">
 </p>
 
+<p align="center">
+  <img src="docs/screen-matrix.png" alt="Munkitop matrix view" width="49%">
+  <img src="docs/screen-store.png" alt="Munkitop store view" width="49%">
+</p>
+
 ## Highlights
 
 - Manage people with Munki `ClientIdentifier` values based on email.
