@@ -203,7 +203,7 @@ export const PreviewText = styled.div`
 
 export const PreviewLogoImage = styled.img`
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   width: 100%;
 `;
 

@@ -52,6 +52,9 @@ class SettingsController extends Controller
 
         abort_unless(is_file($absolutePath), 404);
 
-        return response()->file($absolutePath);
+        return response()->file($absolutePath, [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

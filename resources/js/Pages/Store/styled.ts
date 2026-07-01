@@ -70,7 +70,7 @@ export const BrandMark = styled.div<{ $mainColor: string }>`
 
 export const BrandLogo = styled.img`
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   width: 100%;
 `;
 

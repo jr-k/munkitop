@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AppSetting;
+use Illuminate\Support\Facades\Storage;
 
 class AppIdentitySettings
 {
@@ -27,12 +28,10 @@ class AppIdentitySettings
 
     public function payload(): array
     {
-        $logoPath = $this->logoPath();
-
         return [
             'name' => $this->name(),
             'main_color' => $this->mainColor(),
-            'logo_url' => $logoPath ? route('app.logo') : null,
+            'logo_url' => $this->logoUrl(),
             'preset_colors' => self::PRESET_COLORS,
         ];
     }
@@ -58,6 +57,17 @@ class AppIdentitySettings
         return $path !== '' ? $path : null;
     }
 
+    public function logoUrl(): ?string
+    {
+        $path = $this->logoPath();
+
+        if (! $path) {
+            return null;
+        }
+
+        return route('app.logo', ['v' => $this->logoVersion($path)]);
+    }
+
     public function update(string $name, string $mainColor, ?string $logoPath = null): void
     {
         $this->set(self::NAME_KEY, trim($name) !== '' ? trim($name) : (string) config('app.display_name'));
@@ -81,5 +91,20 @@ class AppIdentitySettings
             ['key' => $key],
             ['value' => $value],
         );
+    }
+
+    private function logoVersion(string $path): string
+    {
+        $absolutePath = Storage::disk('local')->path($path);
+
+        if (! is_file($absolutePath)) {
+            return sha1($path);
+        }
+
+        return sha1(implode('|', [
+            $path,
+            filemtime($absolutePath) ?: 0,
+            filesize($absolutePath) ?: 0,
+        ]));
     }
 }

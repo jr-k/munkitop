@@ -24,7 +24,7 @@ export default function LogoMark({ size = 34, color = '#111827', logoUrl = null 
                     style={{
                         display: 'block',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         width: '100%',
                     }}
                 />

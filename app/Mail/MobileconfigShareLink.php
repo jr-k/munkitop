@@ -42,7 +42,7 @@ class MobileconfigShareLink extends Mailable
             text: 'mail.mobileconfig-share-link-text',
             with: [
                 'appName' => $identity->name(),
-                'appLogoUrl' => $identity->logoPath() ? route('app.logo') : null,
+                'appLogoUrl' => $identity->logoUrl(),
                 'appMainColor' => $identity->mainColor(),
             ],
         );

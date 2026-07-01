@@ -37,7 +37,7 @@ class StoreAccountSetupNotification extends Notification
                 'mail.store-account-setup-text',
             ], [
                 'appName' => $appName,
-                'appLogoUrl' => $identity->logoPath() ? route('app.logo') : null,
+                'appLogoUrl' => $identity->logoUrl(),
                 'appMainColor' => $identity->mainColor(),
                 'setupUrl' => $setupUrl,
                 'userName' => $notifiable->name ?? null,
